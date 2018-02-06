@@ -1,1 +1,1 @@
-# altinn-proxy form Systema AS
+# altinn-proxy for Systema AS
