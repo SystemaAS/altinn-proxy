@@ -3,6 +3,7 @@ package no.systema.altinn.integration;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -47,7 +48,6 @@ import no.systema.jservices.common.dao.services.FirmaltDaoService;
 public class Authorization {
 	private static Logger logger = Logger.getLogger(Authorization.class.getName());
 	private String CATALINA_BASE = System.getProperty("catalina.base");
-	private String CATALINA_HOME = System.getProperty("catalina.home");
 	
     @Value("${what}")
     String what;	
@@ -71,13 +71,13 @@ public class Authorization {
 	@Autowired
 	private FirmaltDaoService firmaltDaoService;
 	
+	@Autowired
+	private CertificateManager certificateManager;
+	
     @PostConstruct
 	public void constructor() {
-    	if(CATALINA_BASE == null){
-    		CATALINA_BASE = "";  //TODO for test
-    		
-    	} 
-
+    	logger.info("certificateManager="+certificateManager);
+    	
     	FirmaltDao firmaltDao = firmaltDaoService.get();
     	logger.info("Autowired firmaltDaoService, config-data="+ReflectionToStringBuilder.toString(firmaltDao));
     	
@@ -108,6 +108,7 @@ public class Authorization {
 		
 		filePath = firmaltDao.getAipath();
 		assert filePath != null;
+		logger.info("filePath store: " + filePath);	
 		
 		authUri = ActionsUriBuilder.authentication(host, authenticationUrl);
 		
@@ -139,11 +140,7 @@ public class Authorization {
 		char[] password = clientSSLCertificateKeystorePassword.toCharArray();
 
 		KeyStore keyStore = KeyStore.getInstance("PKCS12");
-//		  ClassPathResource keyStoreLocation = new ClassPathResource(CATALINA_BASE + clientSSLCertificateKeystoreLocation);
-		  String keyStoreLocation = new String(CATALINA_BASE + clientSSLCertificateKeystoreLocation);
-				   
-		File certFile = ResourceUtils.getFile(keyStoreLocation);
-		keyStore.load(new FileInputStream(certFile), password);
+		keyStore.load(certificateManager.loadCertificate(), password);
 
 		/*
 	     * Determines whether the certificate chain can be trusted without consulting the trust manager
@@ -216,9 +213,9 @@ public class Authorization {
     }   
  
     /**
-     * For attachments, TODO
+     * Get HttpEntity for filedownload
      * 
-     * @return
+     * @return 
      */
     public HttpEntity<ApiKey> getHttpEntityFileDownload()  {
         RestTemplate restTemplate = new RestTemplate(requestFactory);
