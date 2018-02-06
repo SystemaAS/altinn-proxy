@@ -15,6 +15,7 @@ import java.util.List;
 import javax.annotation.PostConstruct;
 import javax.net.ssl.SSLContext;
 
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -46,39 +47,25 @@ import no.systema.jservices.common.dao.services.FirmaltDaoService;
 public class Authorization {
 	private static Logger logger = Logger.getLogger(Authorization.class.getName());
 	private String CATALINA_BASE = System.getProperty("catalina.base");
+	private String CATALINA_HOME = System.getProperty("catalina.home");
 	
     @Value("${what}")
     String what;	
-    
-    private String orgnr;
-	
     @Value("${altinn.authenticationUrl}")
-    String authenticationUrl;
-    
-    
-
-//	@Value("${altinn.apikey}")
-    private String apikey;
- 
-//	@Value("${altinn.apiUsername}")
-    private String apiUsername;	
-    
-    private String filePath;	
-
-//	@Value("${altinn.apiUserpassword}")
-    private String apiUserpassword;		
-	
+    String authenticationUrl;    
     @Value("${altinn.host}")
     private String host;    
-    
     @Value("${altinn.clientSSLCertificateKeystoreLocation}")
     private String clientSSLCertificateKeystoreLocation;
-
-//    @Value("${altinn.clientSSLCertificateKeystorePassword}")
+    
+    private String orgnr;
+    private String apikey;
+    private String apiUsername;	
+    private String filePath;	
+    private String apiUserpassword;		
     private String clientSSLCertificateKeystorePassword;
 
     private ClientHttpRequestFactory requestFactory;
-    
     private URI authUri = null;
 	
 	@Autowired
@@ -91,26 +78,19 @@ public class Authorization {
     		
     	} 
 
-    	logger.info("classpath="+System.getProperty("java.class.path"));
-    	
-    	logger.info("autowoired firmaltDaoService="+firmaltDaoService);
     	FirmaltDao firmaltDao = firmaltDaoService.get();
-    	
-    	logger.info("firmaltDao.getAifirm()="+firmaltDao.getAifirm());
+    	logger.info("Autowired firmaltDaoService, config-data="+ReflectionToStringBuilder.toString(firmaltDao));
     	
 		assert authenticationUrl != null;
-		logger.info("Altinn service url: " + authenticationUrl);
 
 		assert what != null;
 		logger.info("what: " + what);	
 
 		apikey = firmaltDao.getAiapi();
 		assert apikey != null;
-		logger.info("Altinn apikey: " + apikey);
 
 		apiUsername = firmaltDao.getAiuser();
 		assert apiUsername != null;
-		logger.info("Altinn api username: " + apiUsername);
 
 		apiUserpassword = firmaltDao.getAiupwd();
 		assert apiUserpassword != null;
@@ -119,7 +99,6 @@ public class Authorization {
 		logger.info("Altinn host: " + host);			
 		
 		assert clientSSLCertificateKeystoreLocation != null;
-		logger.info("Altinn client certificate keystore location: " + clientSSLCertificateKeystoreLocation);
 
 		clientSSLCertificateKeystorePassword = firmaltDao.getAipwd();
 		assert clientSSLCertificateKeystorePassword != null;
