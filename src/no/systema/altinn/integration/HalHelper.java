@@ -1,4 +1,4 @@
-package no.systema.altinn.proxy;
+package no.systema.altinn.integration;
 
 import static de.otto.edison.hal.EmbeddedTypeInfo.withEmbedded;
 import static de.otto.edison.hal.HalParser.parse;

@@ -1,4 +1,4 @@
-package no.systema.altinn.controller;
+package no.systema.altinn;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import no.systema.altinn.proxy.ActionsServiceManager;
+import no.systema.altinn.integration.ActionsServiceManager;
 import no.systema.jservices.common.dao.services.BridfDaoService;
 
 @Controller

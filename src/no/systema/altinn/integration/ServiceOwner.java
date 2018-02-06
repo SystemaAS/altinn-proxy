@@ -1,4 +1,4 @@
-package no.systema.altinn.proxy;
+package no.systema.altinn.integration;
 
 /**
  * Enum for possible serviceowner in Altinn <br><br>

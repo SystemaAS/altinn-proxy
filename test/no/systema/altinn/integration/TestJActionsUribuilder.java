@@ -1,4 +1,4 @@
-package no.systema.altinn.proxy;
+package no.systema.altinn.integration;
 
 import static org.junit.Assert.assertEquals;
 
@@ -6,6 +6,11 @@ import java.net.URI;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import no.systema.altinn.integration.ActionsUriBuilder;
+import no.systema.altinn.integration.ServiceCode;
+import no.systema.altinn.integration.ServiceEdition;
+import no.systema.altinn.integration.ServiceOwner;
 
 public class TestJActionsUribuilder {
 

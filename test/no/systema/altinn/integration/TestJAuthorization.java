@@ -1,4 +1,4 @@
-package no.systema.altinn.proxy;
+package no.systema.altinn.integration;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -13,6 +13,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.http.HttpEntity;
 
 import no.systema.altinn.entities.ApiKey;
+import no.systema.altinn.integration.Authorization;
 import no.systema.jservices.common.dao.services.FirmaltDaoService;
 
 @PropertySource(value = { "classpath:application-test.properties" })

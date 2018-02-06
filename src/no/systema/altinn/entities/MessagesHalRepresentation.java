@@ -3,7 +3,7 @@ package no.systema.altinn.entities;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import de.otto.edison.hal.HalRepresentation;
-import no.systema.altinn.proxy.ActionsUriBuilder;
+import no.systema.altinn.integration.ActionsUriBuilder;
 
 /**
  * The value object for Messages 
