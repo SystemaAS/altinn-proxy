@@ -1,4 +1,6 @@
-package no.systema.altinn.integration;
+package no.systema.altinn.entities;
+
+import no.systema.altinn.integration.ActionsServiceManager;
 
 /**
  * Enum for possible serviceowner in Altinn <br><br>

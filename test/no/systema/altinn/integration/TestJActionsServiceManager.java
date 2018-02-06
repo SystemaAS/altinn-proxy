@@ -15,10 +15,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import no.systema.altinn.entities.MessagesHalRepresentation;
 import no.systema.altinn.entities.MetadataHalRepresentation;
+import no.systema.altinn.entities.ServiceCode;
+import no.systema.altinn.entities.ServiceEdition;
+import no.systema.altinn.entities.ServiceOwner;
 import no.systema.altinn.integration.ActionsServiceManager;
-import no.systema.altinn.integration.ServiceCode;
-import no.systema.altinn.integration.ServiceEdition;
-import no.systema.altinn.integration.ServiceOwner;
 import no.systema.jservices.common.dao.services.FirmaltDaoService;
 
 @PropertySource(value = { "classpath:application-test.properties" })

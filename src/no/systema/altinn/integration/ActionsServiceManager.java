@@ -24,6 +24,9 @@ import de.otto.edison.hal.Links;
 import no.systema.altinn.entities.ApiKey;
 import no.systema.altinn.entities.MessagesHalRepresentation;
 import no.systema.altinn.entities.MetadataHalRepresentation;
+import no.systema.altinn.entities.ServiceCode;
+import no.systema.altinn.entities.ServiceEdition;
+import no.systema.altinn.entities.ServiceOwner;
 import no.systema.jservices.common.util.ApplicationPropertiesUtil;
 
 /**

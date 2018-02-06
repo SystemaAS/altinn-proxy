@@ -5,6 +5,10 @@ import java.net.URI;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import no.systema.altinn.entities.ServiceCode;
+import no.systema.altinn.entities.ServiceEdition;
+import no.systema.altinn.entities.ServiceOwner;
+
 /**
  * Creates URI on https://www.altinn.no/api/Help
  * 

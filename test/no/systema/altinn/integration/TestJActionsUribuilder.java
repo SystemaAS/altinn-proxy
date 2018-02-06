@@ -7,10 +7,10 @@ import java.net.URI;
 import org.junit.Before;
 import org.junit.Test;
 
+import no.systema.altinn.entities.ServiceCode;
+import no.systema.altinn.entities.ServiceEdition;
+import no.systema.altinn.entities.ServiceOwner;
 import no.systema.altinn.integration.ActionsUriBuilder;
-import no.systema.altinn.integration.ServiceCode;
-import no.systema.altinn.integration.ServiceEdition;
-import no.systema.altinn.integration.ServiceOwner;
 
 public class TestJActionsUribuilder {
 
