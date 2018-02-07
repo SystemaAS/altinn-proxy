@@ -1,9 +1,6 @@
 package no.systema.altinn.integration;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -37,7 +34,6 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.util.ResourceUtils;
 import org.springframework.web.client.RestTemplate;
 
 import no.systema.altinn.entities.ApiKey;
@@ -47,16 +43,11 @@ import no.systema.jservices.common.dao.services.FirmaltDaoService;
 @Service("authorization")
 public class Authorization {
 	private static Logger logger = Logger.getLogger(Authorization.class.getName());
-	private String CATALINA_BASE = System.getProperty("catalina.base");
 	
-    @Value("${what}")
-    String what;	
     @Value("${altinn.authenticationUrl}")
     String authenticationUrl;    
     @Value("${altinn.host}")
     private String host;    
-    @Value("${altinn.clientSSLCertificateKeystoreLocation}")
-    private String clientSSLCertificateKeystoreLocation;
     
     private String orgnr;
     private String apikey;
@@ -83,9 +74,6 @@ public class Authorization {
     	
 		assert authenticationUrl != null;
 
-		assert what != null;
-		logger.info("what: " + what);	
-
 		apikey = firmaltDao.getAiapi();
 		assert apikey != null;
 
@@ -98,8 +86,6 @@ public class Authorization {
 		assert host != null;
 		logger.info("Altinn host: " + host);			
 		
-		assert clientSSLCertificateKeystoreLocation != null;
-
 		clientSSLCertificateKeystorePassword = firmaltDao.getAipwd();
 		assert clientSSLCertificateKeystorePassword != null;
 
