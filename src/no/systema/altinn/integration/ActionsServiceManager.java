@@ -5,29 +5,32 @@ import static de.otto.edison.hal.HalParser.parse;
 import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import de.otto.edison.hal.HalRepresentation;
 import de.otto.edison.hal.Link;
-import de.otto.edison.hal.Links;
 import no.systema.altinn.entities.ApiKey;
 import no.systema.altinn.entities.MessagesHalRepresentation;
 import no.systema.altinn.entities.MetadataHalRepresentation;
 import no.systema.altinn.entities.ServiceCode;
 import no.systema.altinn.entities.ServiceEdition;
 import no.systema.altinn.entities.ServiceOwner;
-import no.systema.jservices.common.util.ApplicationPropertiesUtil;
+import no.systema.jservices.common.dao.FirmaltDao;
 
 /**
  * The responsible service manager for accessing resources inside www.altinn.no
@@ -38,6 +41,7 @@ import no.systema.jservices.common.util.ApplicationPropertiesUtil;
  * @date 2018-01
  *
  */
+@EnableScheduling
 @Service("actionsservicemanager")
 public class ActionsServiceManager {
 	private static Logger logger = Logger.getLogger(ActionsServiceManager.class.getName());
@@ -105,34 +109,6 @@ public class ActionsServiceManager {
 		return hal.toString();
 	}
 	
-	public void getAttachment(MessagesHalRepresentation message) {
-		Links links = message.getLinks();
-		logger.info("message:"+message.getMessageId()+ "links="+links.toString());
-		
-		
-		String self = message.getLinks().getLinksBy("self").get(0).getHref();
-		
-		logger.info("self="+self);
-		
-		URI uri = URI.create(self);
-		
-		//Get message
-		MessagesHalRepresentation halMessage = getMessage(uri);
-
-		
-		Optional<Link> attachmentLink =halMessage.getLinks().getLinkBy("attachment");
-		logger.info("attLink="+attachmentLink);
-		
-		logger.info("attLink.get().getHref()="+attachmentLink.get().getHref());
-		
-		uri = URI.create(attachmentLink.get().getHref());
-		
-		//Prefix Altinn-name with created_date
-		StringBuilder writeFile = new StringBuilder(halMessage.getCreatedDate()).append("-").append(attachmentLink.get().getName());
-		
-		getAttachment(uri, writeFile.toString());
-
-	}	
 	
 	public void putDagsobjorXMLRepresentationToPath() {
 		
@@ -143,16 +119,28 @@ public class ActionsServiceManager {
 		
 	}
 	
-	public void putDagsobjorPDFRepresentationToPath() {
-
-		List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,
-				ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor);
+	
+	/**
+	 * Retrieves the PDF representation of dagsoppgjor <br>
+	 * and stores as defined in {@linkplain FirmaltDao}.
+	 * 
+	 * Also Scheduled @Value("#{someBean.someProperty != null ? someBean.someProperty : 'default'}")
+	 * 
+	 * @return List of fileNames
+	 */
+	@Scheduled(cron="${altinn.file.download.cron.pattern}")
+	public List<String> putDagsobjorPDFRepresentationToPath() {
+		List<String> fileNames = new ArrayList<String>();
+		List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor);
+	
 		dagsobjors.forEach((message) -> {
 			logger.info("message" + message);
-			getAttachment(message);
+			fileNames.add(getAttachment(message));
 		});
 
-
+		logger.info("Dagsoppgjors PDF's are downloaded.");
+		
+		return fileNames;
 
 	}
 	
@@ -166,7 +154,27 @@ public class ActionsServiceManager {
 		URI uri = ActionsUriBuilder.metadata(authorization.getHost());
 		return getMetadata(uri);
 	}
+
 	
+	private String getAttachment(MessagesHalRepresentation message) {
+		String self = message.getLinks().getLinksBy("self").get(0).getHref();
+		logger.info("self="+self);
+		
+		URI uri = URI.create(self);
+		//Get specific message
+		MessagesHalRepresentation halMessage = getMessage(uri);
+		
+		Optional<Link> attachmentLink =halMessage.getLinks().getLinkBy("attachment");
+		uri = URI.create(attachmentLink.get().getHref());
+		
+		//Prefix Altinn-name with created_date
+		StringBuilder writeFile = new StringBuilder(halMessage.getCreatedDate()).append("-").append(attachmentLink.get().getName());
+		getAttachment(uri, writeFile.toString());
+		
+		return writeFile.toString();
+
+	}	
+
 	private List<MessagesHalRepresentation> getMessages(URI uri){
 		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntity();
 		ResponseEntity<String> responseEntity = null;

@@ -3,6 +3,7 @@ package no.systema.altinn;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import no.systema.altinn.entities.MessagesHalRepresentation;
 import no.systema.altinn.integration.ActionsServiceManager;
 import no.systema.jservices.common.dao.services.BridfDaoService;
 
@@ -45,9 +47,13 @@ public class DownloadController {
 			Assert.notNull(userName, "userName not found in Bridf."); 
 			
 			
-			serviceManager.putDagsobjorPDFRepresentationToPath();
+			List<String> dagsoppgors = serviceManager.putDagsobjorPDFRepresentationToPath();
 			
 			logger.info("serviceManager.putDagsobjorPDFRepresentationToPath() executed...");
+
+			sb.append("Dagsoppgjors filer i  meldinger fra Skattetaen er nedlasted.\n \n \n");
+
+			dagsoppgors.forEach(dp -> sb.append(dp+"\n \n"));
 			
 			
 		} catch (Exception e) {

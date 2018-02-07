@@ -22,7 +22,6 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -44,18 +43,14 @@ import no.systema.jservices.common.dao.services.FirmaltDaoService;
 public class Authorization {
 	private static Logger logger = Logger.getLogger(Authorization.class.getName());
 	
-    @Value("${altinn.authenticationUrl}")
-    String authenticationUrl;    
-    @Value("${altinn.host}")
-    private String host;    
-    
+    private String authenticationUrl;    
+    private String host;  
     private String orgnr;
     private String apikey;
     private String apiUsername;	
     private String filePath;	
     private String apiUserpassword;		
     private String clientSSLCertificateKeystorePassword;
-
     private ClientHttpRequestFactory requestFactory;
     private URI authUri = null;
 	
@@ -67,12 +62,11 @@ public class Authorization {
 	
     @PostConstruct
 	public void constructor() {
-    	logger.info("certificateManager="+certificateManager);
-    	
     	FirmaltDao firmaltDao = firmaltDaoService.get();
     	logger.info("Autowired firmaltDaoService, config-data="+ReflectionToStringBuilder.toString(firmaltDao));
     	
-		assert authenticationUrl != null;
+    	authenticationUrl = firmaltDao.getAiauur();
+    	assert authenticationUrl != null;
 
 		apikey = firmaltDao.getAiapi();
 		assert apikey != null;
@@ -83,8 +77,8 @@ public class Authorization {
 		apiUserpassword = firmaltDao.getAiupwd();
 		assert apiUserpassword != null;
 		
+		host = firmaltDao.getAihost();
 		assert host != null;
-		logger.info("Altinn host: " + host);			
 		
 		clientSSLCertificateKeystorePassword = firmaltDao.getAipwd();
 		assert clientSSLCertificateKeystorePassword != null;
@@ -94,7 +88,6 @@ public class Authorization {
 		
 		filePath = firmaltDao.getAipath();
 		assert filePath != null;
-		logger.info("filePath store: " + filePath);	
 		
 		authUri = ActionsUriBuilder.authentication(host, authenticationUrl);
 		
@@ -236,9 +229,6 @@ public class Authorization {
 		return entityHeadersOnly;
 
     }      
-    
-    
-    
     
     /**
      * Return Altinn host
