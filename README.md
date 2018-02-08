@@ -10,7 +10,7 @@ For more detailed info, see [usecase](UC.md)
 
 
 ## Prerequsities
-Organisation needs to delegate service *RF-1331 Søknad om dagsoppgjør* to a virksomhetsbruker defined by Systema AS, with role:ECKeyRole.
+* Organisation needs to delegate service *RF-1331 Søknad om dagsoppgjør* to a virksomhetsbruker defined by Systema AS, with role:ECKeyRole.
 
 ## Features
 * Read messages from the organisation innbox; filtered on ServiceOwner SKD, ServiceCode 5012 and ServiceEdition 171208. 
