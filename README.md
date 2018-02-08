@@ -19,6 +19,6 @@ Organisation needs to delegate service *RF-1331 Søknad om dagsoppgjør* to a vi
 
 ## Set-up
 * Make sure the a valid certificate is defined in Tomcat server.
-* Make sure that table: [FIRMALT](syjservicescommon/src/main/no/systema/jservices/common/dao/FirmaltDao.java) is configured with appropriate values.
+* Make sure that table: [FIRMALT](https://github.com/SystemaAS/syjservicescommon/blob/master/src/main/no/systema/jservices/common/dao/FirmaltDao.java) is configured with appropriate values.
 
 
