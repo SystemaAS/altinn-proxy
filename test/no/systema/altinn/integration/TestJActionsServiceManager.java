@@ -109,30 +109,13 @@ public class TestJActionsServiceManager {
 	}
 	
 	@Test
-	public final void testGetDagsobjorPDF() {
-		System.setProperty("catalina.base", "");
+	public final void testGetDagsobjor() {
 		
 		serviceManager.putDagsobjorAttachmentsToPath();
 //		result2.forEach((message) ->  System.out.println("message from "+ServiceOwner.Skatteetaten+":"+message));
 		
 	}	
-	
-	@Test
-	public final void testGetDagsobjorXML() {
-		
-		serviceManager.putDagsobjorXMLRepresentationToPath();
-//		result2.forEach((message) ->  System.out.println("message from "+ServiceOwner.Skatteetaten+":"+message));
-		
-	}	
-	
-	
-	@Test
-	public final void testGetMetadata() {
-		List<MetadataHalRepresentation> result = serviceManager.getMetadata();
-		
-		assertNotNull(result); 
-	}	
-	
+
 	static void printJsonView(List<MessagesHalRepresentation> messages)  {
 	   final ObjectMapper mapper = new ObjectMapper();
 	    

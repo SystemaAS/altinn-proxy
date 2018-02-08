@@ -32,7 +32,6 @@ public class CertificateManager {
 
 	private File getCertificateFile() throws FileNotFoundException {
 		String folder = CATALINA_HOME + "/espedsg/certificates";
-		logger.info("Certificate folder="+folder);
 		File certificateFolder = FileUtils.getFile(folder);
 		logger.info("Certificate folder found="+certificateFolder);
 		
@@ -51,7 +50,8 @@ public class CertificateManager {
 				files
 		        .stream()
 		        .filter(f -> f.getName().startsWith(PREFIX_NAME))
-		        .collect(Collectors.toSet());		
+		        .collect(Collectors.toSet());	
+		
 		if (filtered.size() != 1) {
 			String errMsg = String.format("Could not find single tuple on certifiction file in folder %s", certificateFolder.getAbsolutePath());
 			logger.error(errMsg);
