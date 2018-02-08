@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 @Service("certificateManager")
 public class CertificateManager {
 	private static Logger logger = Logger.getLogger(CertificateManager.class.getName());
-	private static String CATALINA_HOME = System.getProperty("catalina.home"); //TODO
+	private static String CATALINA_HOME = System.getProperty("catalina.home");
 	private static String PREFIX_NAME = "Buypass ID-SYSTEMA";
 
 	/**
@@ -34,6 +34,8 @@ public class CertificateManager {
 		String folder = CATALINA_HOME + "/espedsg/certificates";
 		logger.info("Certificate folder="+folder);
 		File certificateFolder = FileUtils.getFile(folder);
+		logger.info("Certificate folder found="+certificateFolder);
+		
 		File certificateFile = null;
 		String[] extensions = {"p12"};
 		Collection<File> files = FileUtils.listFiles(certificateFolder, extensions, false);

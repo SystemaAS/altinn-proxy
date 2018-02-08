@@ -112,7 +112,7 @@ public class TestJActionsServiceManager {
 	public final void testGetDagsobjorPDF() {
 		System.setProperty("catalina.base", "");
 		
-		serviceManager.putDagsobjorPDFRepresentationToPath();
+		serviceManager.putDagsobjorAttachmentsToPath();
 //		result2.forEach((message) ->  System.out.println("message from "+ServiceOwner.Skatteetaten+":"+message));
 		
 	}	

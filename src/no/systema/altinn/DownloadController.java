@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import no.systema.altinn.entities.MessagesHalRepresentation;
 import no.systema.altinn.integration.ActionsServiceManager;
+import no.systema.jservices.common.dao.FirmaltDao;
 import no.systema.jservices.common.dao.services.BridfDaoService;
 
 @Controller
@@ -26,6 +27,10 @@ public class DownloadController {
 
 	/**
 	 * Entrance for accessing info in secure www.altinn.no, using .P12 certificate
+	 * 
+	 * Files are downloaded into path define in {@linkplain FirmaltDao}.aipath
+	 * 
+	 * Note: No state-handling of messages in Altinn!
 	 * 
 	 * @Example: http://gw.systema.no:8080/altinn-proxy/downloadDagsobjor.do?user=FREDRIK
 	 * 
@@ -47,13 +52,16 @@ public class DownloadController {
 			Assert.notNull(userName, "userName not found in Bridf."); 
 			
 			
-			List<String> dagsoppgors = serviceManager.putDagsobjorPDFRepresentationToPath();
+			List<String> dagsoppgors = serviceManager.putDagsobjorAttachmentsToPath();
 			
-			logger.info("serviceManager.putDagsobjorPDFRepresentationToPath() executed...");
+			logger.info("serviceManager.putDagsobjorAttachmentsToPath() executed...");
 
-			sb.append("Dagsoppgjors filer i  meldinger fra Skattetaen er nedlasted.\n \n \n");
+			sb.append("Dagsoppgjors-filer i meldinger fra Skattetaen er nedlasted. \n \n");
 
-			dagsoppgors.forEach(dp -> sb.append(dp+"\n \n"));
+			sb.append("Path till filer finnes i fil:FIRMALT og felt: AIPATH \n \n");
+			
+			sb.append("Filer:\n");
+			dagsoppgors.forEach(dp -> sb.append(dp+"\n"));
 			
 			
 		} catch (Exception e) {

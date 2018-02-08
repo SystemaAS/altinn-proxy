@@ -3,7 +3,9 @@ package no.systema.altinn.integration;
 import static de.otto.edison.hal.HalParser.parse;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -121,24 +123,24 @@ public class ActionsServiceManager {
 	
 	
 	/**
-	 * Retrieves the PDF representation of dagsoppgjor <br>
-	 * and stores as defined in {@linkplain FirmaltDao}.
+	 * Retrieves all attachment in Melding: Dagsoppgjor <br>
+	 * and stores as defined in {@linkplain FirmaltDao}.aipath
 	 * 
-	 * Also Scheduled @Value("#{someBean.someProperty != null ? someBean.someProperty : 'default'}")
+	 * Also Scheduled
 	 * 
 	 * @return List of fileNames
 	 */
 	@Scheduled(cron="${altinn.file.download.cron.pattern}")
-	public List<String> putDagsobjorPDFRepresentationToPath() {
+	public List<String> putDagsobjorAttachmentsToPath() {
 		List<String> fileNames = new ArrayList<String>();
 		List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor);
 	
 		dagsobjors.forEach((message) -> {
 			logger.info("message" + message);
-			fileNames.add(getAttachment(message));
+			fileNames.addAll(getAttachments(message));
 		});
 
-		logger.info("Dagsoppgjors PDF's are downloaded.");
+		logger.info("Dagsoppgjors attachments are downloaded.");
 		
 		return fileNames;
 
@@ -156,7 +158,11 @@ public class ActionsServiceManager {
 	}
 
 	
-	private String getAttachment(MessagesHalRepresentation message) {
+	/*
+	 * Get all attachments in message, e.i. PDF and XML
+	 */
+	private List<String> getAttachments(MessagesHalRepresentation message) {
+		List<String> fileNames = new ArrayList<String>();
 		String self = message.getLinks().getLinksBy("self").get(0).getHref();
 		logger.info("self="+self);
 		
@@ -164,14 +170,18 @@ public class ActionsServiceManager {
 		//Get specific message
 		MessagesHalRepresentation halMessage = getMessage(uri);
 		
-		Optional<Link> attachmentLink =halMessage.getLinks().getLinkBy("attachment");
-		uri = URI.create(attachmentLink.get().getHref());
+		List<Link> attachmentsLink =halMessage.getLinks().getLinksBy("attachment");
+		attachmentsLink.forEach((attLink) -> {
+			logger.info("attLink="+attLink);
+			URI attUri = URI.create(attLink.getHref());
+			//Prefix Altinn-name with created_date
+			StringBuilder writeFile = new StringBuilder(halMessage.getCreatedDate()).append("-").append(attLink.getName());
+			getAttachment(attUri, writeFile.toString());
+			fileNames.add(writeFile.toString());
+			
+		});
 		
-		//Prefix Altinn-name with created_date
-		StringBuilder writeFile = new StringBuilder(halMessage.getCreatedDate()).append("-").append(attachmentLink.get().getName());
-		getAttachment(uri, writeFile.toString());
-		
-		return writeFile.toString();
+		return fileNames;
 
 	}	
 
@@ -227,7 +237,6 @@ public class ActionsServiceManager {
 	private void getAttachment(URI uri, String writeFile) {
 		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntityFileDownload();
 		ResponseEntity<byte[]> responseEntity = null;
-		String filePath = authorization.getFilePath();
 
 		try {
 			logger.info("getAttachment, uri=" + uri);
@@ -239,20 +248,10 @@ public class ActionsServiceManager {
 				throw new RuntimeException(responseEntity.getStatusCode().toString());
 			} else {
 
-				ByteArrayInputStream bis = new ByteArrayInputStream(responseEntity.getBody());
-				FileOutputStream fos = new FileOutputStream(filePath + writeFile);
-				byte[] buffer = new byte[1024];
-				int len = 0;
-				while ((len = bis.read(buffer)) > 0) {
-					fos.write(buffer, 0, len);
-				}
-
-				fos.close();
-				bis.close();
+				writeToFile(writeFile, responseEntity);
 
 			}
 
-			logger.info("File: " + filePath + writeFile + " saved on disk.");
 
 		} catch (Exception e) {
 			String errMessage = String.format(" request failed: %s", e.getLocalizedMessage());
@@ -261,7 +260,24 @@ public class ActionsServiceManager {
 		}
 
 	}
+
+	private void writeToFile(String writeFile, ResponseEntity<byte[]> responseEntity) throws FileNotFoundException, IOException {
+		ByteArrayInputStream bis = new ByteArrayInputStream(responseEntity.getBody());
+		FileOutputStream fos = new FileOutputStream(authorization.getFilePath() + writeFile);
+		byte[] buffer = new byte[1024];
+		int len = 0;
+		while ((len = bis.read(buffer)) > 0) {
+			fos.write(buffer, 0, len);
+		}
+
+		fos.close();
+		bis.close();
+
+		logger.info("File: " + authorization.getFilePath() + writeFile + " saved on disk.");
+		
+	}
 	
+
 	private List<MetadataHalRepresentation> getMetadata(URI uri){
 		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntity();
 		ResponseEntity<String> responseEntity = null;
