@@ -6,6 +6,8 @@ The client can has access to features defined in Altinn.
 
 Using a Virksomhetscertifikat enables usage of the Altinn-feature of rights delegation, from one organization to another.
 
+For more detailed info, see [usecase] (UC.md)
+
 
 ## Prerequsities
 Organisation needs to delegate service *RF-1331 Søknad om dagsoppgjør* to a virksomhetsbruker defined by Systema AS, with role:ECKeyRole.
