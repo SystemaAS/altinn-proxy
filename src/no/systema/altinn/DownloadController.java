@@ -32,7 +32,7 @@ public class DownloadController {
 	 * 
 	 * Note: No state-handling of messages in Altinn!
 	 * 
-	 * @Example: http://gw.systema.no:8080/altinn-proxy/downloadDagsobjor.do?user=FREDRIK
+	 * @Example: http://gw.systema.no:8080/altinn-proxy/downloadDagsobjor.do?user=FREDRIK&forceAll=false
 	 * 
 	 * @param session
 	 * @param request, user 
@@ -51,10 +51,10 @@ public class DownloadController {
 			String userName = bridfDaoService.getUserName(user);
 			Assert.notNull(userName, "userName not found in Bridf."); 
 			
+			String forceAll = request.getParameter("forceAll");
+			List<String> dagsoppgors = serviceManager.putDagsobjorAttachmentsToPath(Boolean.valueOf(forceAll));
 			
-			List<String> dagsoppgors = serviceManager.putDagsobjorAttachmentsToPath();
-			
-			logger.info("serviceManager.putDagsobjorAttachmentsToPath() executed...");
+			logger.info("serviceManager.putDagsobjorAttachmentsToPath(boolean forceAll) executed...forceAll="+forceAll);
 
 			sb.append("Dagsoppgjors-filer i meldinger fra Skattetaen er nedlasted. \n \n");
 

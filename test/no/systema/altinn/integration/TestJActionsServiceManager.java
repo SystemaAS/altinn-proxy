@@ -111,7 +111,7 @@ public class TestJActionsServiceManager {
 	@Test
 	public final void testGetDagsobjor() {
 		
-		serviceManager.putDagsobjorAttachmentsToPath();
+		serviceManager.putDagsobjorAttachmentsToPath(false);
 //		result2.forEach((message) ->  System.out.println("message from "+ServiceOwner.Skatteetaten+":"+message));
 		
 	}	

@@ -9,12 +9,12 @@ Using a Virksomhetscertifikat enables usage of the Altinn-feature of rights dele
 For more detailed info, see [usecase](UC.md)
 
 
-### Prerequsities
+### Prerequisites
 * Organisation needs to delegate service *RF-1331 Søknad om dagsoppgjør* to a virksomhetsbruker defined by Systema AS, with role:ECKeyRole.
 
 ### Features
-* Read messages from the organisation innbox; filtered on ServiceOwner SKD, ServiceCode 5012 and ServiceEdition 171208. 
-* Download attachment i messages: automatic and manually.
+* Read messages from the organisation innbox; filtered on ServiceOwner SKD, ServiceCode 5012, ServiceEdition 171208 and current day. 
+* Download attachment i messages: Automatic once per today (03.00) and/or manually.
 
 
 ### Set-up

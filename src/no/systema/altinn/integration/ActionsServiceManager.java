@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +22,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import de.otto.edison.hal.HalRepresentation;
 import de.otto.edison.hal.Link;
 import no.systema.altinn.entities.ApiKey;
 import no.systema.altinn.entities.MessagesHalRepresentation;
@@ -99,16 +100,25 @@ public class ActionsServiceManager {
 	 * Retrieves all attachment in Melding: Dagsoppgjor <br>
 	 * and stores as defined in {@linkplain FirmaltDao}.aipath
 	 * 
+	 * @param forceAll, convenience for troubleshooting, typical use is false.
 	 * @return List of fileNames
 	 */
-	@Scheduled(cron="${altinn.file.download.cron.pattern}")
-	public List<String> putDagsobjorAttachmentsToPath() {
+	public List<String> putDagsobjorAttachmentsToPath(boolean forceAll) {
 		List<String> fileNames = new ArrayList<String>();
 		List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor);
-	
+		
 		dagsobjors.forEach((message) -> {
-			logger.info("message" + message);
-			fileNames.addAll(getAttachments(message));
+			if (forceAll) {
+				fileNames.addAll(getAttachments(message));
+			} else {
+				LocalDateTime createdDate = LocalDateTime.parse(message.getCreatedDate(),DateTimeFormatter.ISO_DATE_TIME);
+				if (createdDate.isEqual(LocalDateTime.now())) {
+					logger.info("downloading attachement for message " + message);
+					fileNames.addAll(getAttachments(message));
+				} else {
+					logger.info("Ignoring message, CreatedDate is not today, CreatedDate=" + message.getCreatedDate());
+				}
+			}
 		});
 
 		logger.info("Dagsoppgjors attachments are downloaded.");
@@ -116,6 +126,28 @@ public class ActionsServiceManager {
 		return fileNames;
 
 	}
+
+	@Scheduled(cron="${altinn.file.download.cron.pattern}")
+	private List<String> putDagsobjorAttachmentsToPath() {
+		List<String> fileNames = new ArrayList<String>();
+		List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor);
+		
+		dagsobjors.forEach((message) -> {
+				LocalDateTime createdDate = LocalDateTime.parse(message.getCreatedDate(),DateTimeFormatter.ISO_DATE_TIME);
+				if (createdDate.isEqual(LocalDateTime.now())) {
+					logger.info("downloading attachement for message " + message);
+					fileNames.addAll(getAttachments(message));
+				} else {
+					logger.info("Ignoring message, CreatedDate is not today, CreatedDate=" + message.getCreatedDate());
+				}
+		});
+
+		logger.info("Scheduled download of Dagsoppgjors attachments is executed.");
+		
+		return fileNames;
+
+	}	
+	
 	
 	/*
 	 * Get all attachments in message, e.i. PDF and XML
@@ -134,7 +166,7 @@ public class ActionsServiceManager {
 			logger.info("attLink="+attLink);
 			URI attUri = URI.create(attLink.getHref());
 			//Prefix Altinn-name with created_date
-			StringBuilder writeFile = new StringBuilder(halMessage.getCreatedDate()).append("-").append(attLink.getName());
+			StringBuilder writeFile = new StringBuilder(halMessage.getCreatedDate().toString()).append("-").append(attLink.getName());
 			getAttachment(attUri, writeFile.toString());
 			fileNames.add(writeFile.toString());
 			
@@ -218,6 +250,10 @@ public class ActionsServiceManager {
 
 	}
 
+	/*
+	 * For test
+	 * FileOutputStream fos = new FileOutputStream("/usr/local/Cellar/tomcat/8.0.33/libexec/webapps/altinn-proxy/WEB-INF/resources/files/" + writeFile);
+	 */
 	private void writeToFile(String writeFile, ResponseEntity<byte[]> responseEntity) throws FileNotFoundException, IOException {
 		ByteArrayInputStream bis = new ByteArrayInputStream(responseEntity.getBody());
 		FileOutputStream fos = new FileOutputStream(authorization.getFilePath() + writeFile);

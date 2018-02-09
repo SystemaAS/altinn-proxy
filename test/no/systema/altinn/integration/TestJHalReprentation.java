@@ -6,6 +6,8 @@ import static de.otto.edison.hal.HalParser.parse;
 //import static de.otto.edison.hal.HalParser.parse;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.junit.Before;
@@ -95,12 +97,32 @@ public class TestJHalReprentation {
 	    }
 	 
 	 
+	    	
+	private LocalDateTime getDate(String date) {
+		LocalDateTime dateTime = LocalDateTime.parse(date, DateTimeFormatter.ISO_DATE_TIME);
+		
+		return dateTime;
+	    	
+	    }    	
+	    	
+	@Test
+	public void testAltinnDate() {
+		//Altinn format    "CreatedDate":"2018-01-30T09:26:37.883" assuming DateTimeFormatter.ISO_DATE_TIME
+		String date = "2018-01-30T09:26:37.883";
+		LocalDateTime dateTime = getDate(date);
+		
+		System.out.println("dateTime="+dateTime);
+		
+		
+	}
 
      static class SimpleHalRepresentation extends HalRepresentation {
          @JsonProperty("someProperty")
          private String someProperty = "foo";
          @JsonProperty("someOtherProperty")
          private String someOtherProperty = "bar";
+         @JsonProperty("localDateTime")
+         private LocalDateTime localDateTime;
      } 	 
 	 
 
