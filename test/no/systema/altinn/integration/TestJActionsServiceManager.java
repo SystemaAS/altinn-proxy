@@ -78,7 +78,7 @@ public class TestJActionsServiceManager {
 	@Test
 	public final void testGetMessages() {
 		int orgnr = 810514442;    //810514442, 910021451
-		List<MessagesHalRepresentation> result = serviceManager.getMessages();
+		List<MessagesHalRepresentation> result = serviceManager.getMessages(false);
 		
 		System.out.println("result.size="+result.size());
 		

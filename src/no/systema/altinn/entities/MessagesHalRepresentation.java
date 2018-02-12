@@ -1,5 +1,7 @@
 package no.systema.altinn.entities;
 
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import de.otto.edison.hal.HalRepresentation;
@@ -21,6 +23,10 @@ public class MessagesHalRepresentation extends HalRepresentation{
     private String title;
     @JsonProperty("Status")
     private String status;
+    @JsonProperty("Subject")
+    private String subject;
+    @JsonProperty("Name")
+    private String name;
     @JsonProperty("LastChangedBy")
     private String lastChangedBy;
     @JsonProperty("ServiceOwner")
@@ -147,4 +153,25 @@ public class MessagesHalRepresentation extends HalRepresentation{
 		this.dueDate = dueDate;
 	}
 
+	public String getSubject() {
+		return subject;
+	}
+
+	public void setSubject(String subject) {
+		this.subject = subject;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	@Override
+	public String toString(){
+		return ReflectionToStringBuilder.toString(this);
+	}
+	
 }

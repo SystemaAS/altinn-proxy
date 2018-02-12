@@ -51,6 +51,7 @@ public class DownloadController {
 			String userName = bridfDaoService.getUserName(user);
 			Assert.notNull(userName, "userName not found in Bridf."); 
 			
+			//Ignoring date-filter
 			String forceAll = request.getParameter("forceAll");
 			List<String> dagsoppgors = serviceManager.putDagsobjorAttachmentsToPath(Boolean.valueOf(forceAll));
 			
@@ -77,6 +78,66 @@ public class DownloadController {
 		return sb.toString();
 
 	}
+
+	/**
+	 * Entrance for accessing info in secure www.altinn.no, using .P12 certificate
+	 * 
+	 * Read all meldinger i virksomhets innboks
+	 * 
+	 * 
+	 * @Example: http://gw.systema.no:8080/altinn-proxy/readInnboks.do?user=FREDRIK&forceDetails=false
+	 * 
+	 * @param session
+	 * @param request, user 
+	 * @return status
+	 */	
+	@RequestMapping(value="readInnboks.do", method={RequestMethod.GET, RequestMethod.POST})
+	@ResponseBody
+	public String readInnboks(HttpSession session, HttpServletRequest request) {
+		StringBuilder sb = new StringBuilder();
+
+		logger.info("readInnboks.do...");
+		try {
+			String user = request.getParameter("user");
+			Assert.notNull(user, "user must be delivered."); 
+
+			String userName = bridfDaoService.getUserName(user);
+			Assert.notNull(userName, "userName not found in Bridf."); 
+			
+			String forceDetails = request.getParameter("forceDetails");
+			
+			List<MessagesHalRepresentation> messages = serviceManager.getMessages(Boolean.valueOf(forceDetails));
+			
+			logger.info("serviceManager.getMessages()");
+
+			sb.append("Alle meldinger i innboksen. \n \n");
+			
+			sb.append("Meldinger:\n");
+//			messages.forEach(message -> sb.append(message+"\n \n"));
+			
+			messages.forEach(message -> sb.append(message.toString()+"\n \n"));
+			
+			
+		} catch (Exception e) {
+			// write std.output error output
+			e.printStackTrace();
+			Writer writer = new StringWriter();
+			PrintWriter printWriter = new PrintWriter(writer);
+			e.printStackTrace(printWriter);
+			return "ERROR [JsonResponseOutputterController]" + writer.toString();
+		}
+
+		session.invalidate();
+		return sb.toString();
+
+	}
+	
+	
+	
+	
+	
+	
+	
 	
 	@Autowired
 	private BridfDaoService bridfDaoService;

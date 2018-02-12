@@ -60,12 +60,24 @@ public class ActionsServiceManager {
 	 * Get all messages for orgnr
 	 * 
 	 * @see {@link ActionsUriBuilder}
-	 * @param orgnr
+	 * @param forceDetails, convenience for troubleshooting, typical use is false.
 	 * @return List<MessagesHalRepresentation>
 	 */
-	public List<MessagesHalRepresentation> getMessages() {
+	public List<MessagesHalRepresentation> getMessages(boolean forceDetails) {
+		final List<MessagesHalRepresentation> result = new ArrayList<MessagesHalRepresentation>();
 		URI uri = ActionsUriBuilder.messages(authorization.getHost(), authorization.getOrgnr());
-		return getMessages(uri);
+		if (forceDetails) {
+			List<MessagesHalRepresentation> messages = getMessages(uri);
+			messages.forEach((message) -> {
+				String self = message.getLinks().getLinksBy("self").get(0).getHref();
+				result.add(getMessage(URI.create(self)));
+			});
+
+		} else {
+			result.addAll(getMessages(uri));
+		}
+		return result;
+
 	}
 	
 	/**
@@ -97,7 +109,25 @@ public class ActionsServiceManager {
 	}	
 	
 	/**
-	 * Retrieves all attachment in Melding: Dagsoppgjor <br>
+	 * Get all message for orgnr and specific {@link ServiceOwner}, {@link ServiceOwner}, {@link ServiceEdition} and yesterday
+	 * 
+	 * @see {@link ActionsUriBuilder}
+	 * @param orgnr
+	 * @param serviceOwner
+	 * @param serviceCode
+	 * @param serviceEdition
+	 * @param date
+	 * @return List<MessagesHalRepresentation>
+	 */
+	public List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDateTime yesterday) {
+		logger.info("About to get message greater than "+yesterday);
+		URI uri = ActionsUriBuilder.messages(authorization.getHost(), authorization.getOrgnr(),serviceOwner, serviceCode, serviceEdition, yesterday);
+		return getMessages(uri);
+	}	
+	
+	
+	/**
+	 * Retrieves all attachment in Melding: Dagsoppgjor, for today <br>
 	 * and stores as defined in {@linkplain FirmaltDao}.aipath
 	 * 
 	 * @param forceAll, convenience for troubleshooting, typical use is false.
@@ -105,21 +135,18 @@ public class ActionsServiceManager {
 	 */
 	public List<String> putDagsobjorAttachmentsToPath(boolean forceAll) {
 		List<String> fileNames = new ArrayList<String>();
-		List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor);
-		
+		List<MessagesHalRepresentation> dagsobjors;
+		if (forceAll) {
+			dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor);
+		} else {
+			dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, LocalDateTime.now().minusDays(1));
+			
+		}
+
 		dagsobjors.forEach((message) -> {
-			if (forceAll) {
-				fileNames.addAll(getAttachments(message));
-			} else {
-				LocalDateTime createdDate = LocalDateTime.parse(message.getCreatedDate(),DateTimeFormatter.ISO_DATE_TIME);
-				if (createdDate.isEqual(LocalDateTime.now())) {
-					logger.info("downloading attachement for message " + message);
-					fileNames.addAll(getAttachments(message));
-				} else {
-					logger.info("Ignoring message, CreatedDate is not today, CreatedDate=" + message.getCreatedDate());
-				}
-			}
-		});
+			fileNames.addAll(getAttachments(message));
+		});		
+		
 
 		logger.info("Dagsoppgjors attachments are downloaded.");
 		
@@ -130,18 +157,12 @@ public class ActionsServiceManager {
 	@Scheduled(cron="${altinn.file.download.cron.pattern}")
 	private List<String> putDagsobjorAttachmentsToPath() {
 		List<String> fileNames = new ArrayList<String>();
-		List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor);
-		
+		List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, LocalDateTime.now().minusDays(1));
+	
 		dagsobjors.forEach((message) -> {
-				LocalDateTime createdDate = LocalDateTime.parse(message.getCreatedDate(),DateTimeFormatter.ISO_DATE_TIME);
-				if (createdDate.isEqual(LocalDateTime.now())) {
-					logger.info("downloading attachement for message " + message);
-					fileNames.addAll(getAttachments(message));
-				} else {
-					logger.info("Ignoring message, CreatedDate is not today, CreatedDate=" + message.getCreatedDate());
-				}
-		});
-
+			fileNames.addAll(getAttachments(message));
+		});				
+		
 		logger.info("Scheduled download of Dagsoppgjors attachments is executed.");
 		
 		return fileNames;

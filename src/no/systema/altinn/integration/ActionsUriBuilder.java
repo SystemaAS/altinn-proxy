@@ -1,6 +1,8 @@
 package no.systema.altinn.integration;
 
 import java.net.URI;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -105,7 +107,7 @@ public class ActionsUriBuilder {
 	/**
 	 * Gets all messages for the given 'who', here orgnr. These can optionally be retrieved in the language specified.
 	 * 
-	 * Filtered on Serviceowner, e.g. SKD (=Skatteetaten)
+	 * Filtered on Serviceowner, e.g. SKD (=Skatteetaten), ServiceCode and ServiceEdition.
 	 * 
 	 * @param host
 	 * @param orgnr
@@ -127,6 +129,29 @@ public class ActionsUriBuilder {
 	}
 
 	/**
+	 * Gets all messages for the given 'who', here orgnr. These can optionally be retrieved in the language specified.
+	 * 
+	 * Filtered on Serviceowner, e.g. SKD (=Skatteetaten), ServiceCode, ServiceEdition and greater than yesterday
+	 * 
+	 * @param host
+	 * @param orgnr
+	 * @param serviceOwneer
+	 * @return URI, ex. GET {who}/Messages?language={language}
+	 */
+	public static URI messages(String host, String orgnr, ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDateTime yesterday) {
+		UriComponents uriComponents = UriComponentsBuilder.newInstance()
+				.scheme("https")
+				.host(host)
+				.path("/api/{who}/messages")
+			    .query("$filter={expand1}")
+			    .buildAndExpand(orgnr, "ServiceOwner eq \'"+serviceOwner+"\' and ServiceCode eq \'"+serviceCode.getCode()+"\' and ServiceEdition eq "+serviceEdition.getCode() +  " and CreatedDate gt datetime\'"+yesterday+"\'")
+			    .encode();
+
+		return uriComponents.toUri();
+
+	}	
+	
+	/**
 	 * Get the authentication url.
 	 * 
 	 * @param host
@@ -146,8 +171,6 @@ public class ActionsUriBuilder {
 		return uriComponents.toUri();
 
 	}	
-	
-	
 	
 	
 	/**
