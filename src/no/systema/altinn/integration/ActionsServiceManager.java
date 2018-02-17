@@ -32,9 +32,11 @@ import no.systema.altinn.entities.ServiceOwner;
 import no.systema.jservices.common.dao.FirmaltDao;
 
 /**
- * The responsible service manager for accessing resources inside www.altinn.no
+ * The responsible service manager for accessing resources inside www.altinn.no <br>
  * 
- * Implementing part of actions found here: https://www.altinn.no/api/Help
+ * Implementing part of actions found here: https://www.altinn.no/api/Help <br>
+ * 
+ * This class is assuming that {@linkplain FirmaltDao} is prepared as a List in {@linkplain Authorization} <br>
  * 
  * @author Fredrik Möller
  * @date 2018-01
@@ -65,17 +67,20 @@ public class ActionsServiceManager {
 	 */
 	public List<MessagesHalRepresentation> getMessages(boolean forceDetails) {
 		final List<MessagesHalRepresentation> result = new ArrayList<MessagesHalRepresentation>();
-		URI uri = ActionsUriBuilder.messages(authorization.getHost(), authorization.getOrgnr());
-		if (forceDetails) {
-			List<MessagesHalRepresentation> messages = getMessages(uri);
-			messages.forEach((message) -> {
-				String self = message.getLinks().getLinksBy("self").get(0).getHref();
-				result.add(getMessage(URI.create(self)));
-			});
+		authorization.getFirmaltDaoList().forEach(firmalt -> {
+			URI uri = ActionsUriBuilder.messages(firmalt.getAihost(), firmalt.getAiorg());
+			if (forceDetails) {
+				List<MessagesHalRepresentation> messages = getMessages(uri, firmalt);
+				messages.forEach((message) -> {
+					String self = message.getLinks().getLinksBy("self").get(0).getHref();
+					result.add(getMessage(URI.create(self),firmalt));
+				});
+	
+			} else {
+				result.addAll(getMessages(uri, firmalt));
+			}
+		});
 
-		} else {
-			result.addAll(getMessages(uri));
-		}
 		return result;
 
 	}
@@ -89,8 +94,14 @@ public class ActionsServiceManager {
 	 * @return List<MessagesHalRepresentation>
 	 */
 	public List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner) {
-		URI uri = ActionsUriBuilder.messages(authorization.getHost(), authorization.getOrgnr(),serviceOwner);
-		return getMessages(uri);
+		final List<MessagesHalRepresentation> result = new ArrayList<MessagesHalRepresentation>();
+		authorization.getFirmaltDaoList().forEach(firmalt -> {		
+			URI uri = ActionsUriBuilder.messages(firmalt.getAihost(),  firmalt.getAiorg(),serviceOwner);
+			result.addAll(getMessages(uri,firmalt));
+		});
+		
+		return result;
+		
 	}	
 	
 	/**
@@ -103,9 +114,13 @@ public class ActionsServiceManager {
 	 * @param serviceEdition
 	 * @return List<MessagesHalRepresentation>
 	 */
-	public List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition) {
-		URI uri = ActionsUriBuilder.messages(authorization.getHost(), authorization.getOrgnr(),serviceOwner, serviceCode, serviceEdition);
-		return getMessages(uri);
+	public List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, FirmaltDao firmalt) {
+		final List<MessagesHalRepresentation> result = new ArrayList<MessagesHalRepresentation>();
+		URI uri = ActionsUriBuilder.messages(firmalt.getAihost(),  firmalt.getAiorg(),serviceOwner,serviceCode, serviceEdition);
+		result.addAll(getMessages(uri,firmalt));
+		
+		return result;
+		
 	}	
 	
 	/**
@@ -119,10 +134,14 @@ public class ActionsServiceManager {
 	 * @param date
 	 * @return List<MessagesHalRepresentation>
 	 */
-	public List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDateTime yesterday) {
+	public List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDateTime yesterday, FirmaltDao firmalt) {
 		logger.info("About to get message greater than "+yesterday);
-		URI uri = ActionsUriBuilder.messages(authorization.getHost(), authorization.getOrgnr(),serviceOwner, serviceCode, serviceEdition, yesterday);
-		return getMessages(uri);
+		final List<MessagesHalRepresentation> result = new ArrayList<MessagesHalRepresentation>();
+		URI uri = ActionsUriBuilder.messages(firmalt.getAihost(), firmalt.getAiorg(), serviceOwner, serviceCode, serviceEdition, yesterday);
+		result.addAll(getMessages(uri, firmalt));
+		
+		return result;
+	
 	}	
 	
 	
@@ -135,18 +154,25 @@ public class ActionsServiceManager {
 	 */
 	public List<String> putDagsobjorAttachmentsToPath(boolean forceAll) {
 		List<String> fileNames = new ArrayList<String>();
-		List<MessagesHalRepresentation> dagsobjors;
 		if (forceAll) {
-			dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor);
-		} else {
-			dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, LocalDateTime.now().minusDays(1));
-			
-		}
+			authorization.getFirmaltDaoList().forEach(firmalt -> {	
+				List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, firmalt);
 
-		dagsobjors.forEach((message) -> {
-			fileNames.addAll(getAttachments(message));
-		});		
-		
+				dagsobjors.forEach((message) -> {
+					fileNames.addAll(getAttachments(message, firmalt));
+				});		
+			
+			});
+		} else {
+			authorization.getFirmaltDaoList().forEach(firmalt -> {			
+				List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, LocalDateTime.now().minusDays(1),firmalt);
+
+				dagsobjors.forEach((message) -> {
+					fileNames.addAll(getAttachments(message, firmalt));
+				});		
+			
+			});
+		}
 
 		logger.info("Dagsoppgjors attachments are downloaded.");
 		
@@ -157,11 +183,14 @@ public class ActionsServiceManager {
 	@Scheduled(cron="${altinn.file.download.cron.pattern}")
 	private List<String> putDagsobjorAttachmentsToPath() {
 		List<String> fileNames = new ArrayList<String>();
-		List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, LocalDateTime.now().minusDays(1));
-	
-		dagsobjors.forEach((message) -> {
-			fileNames.addAll(getAttachments(message));
-		});				
+		authorization.getFirmaltDaoList().forEach(firmalt -> {			
+			List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, LocalDateTime.now().minusDays(1),firmalt);
+		
+			dagsobjors.forEach((message) -> {
+				fileNames.addAll(getAttachments(message, firmalt));
+			});		
+
+		});
 		
 		logger.info("Scheduled download of Dagsoppgjors attachments is executed.");
 		
@@ -173,14 +202,14 @@ public class ActionsServiceManager {
 	/*
 	 * Get all attachments in message, e.i. PDF and XML
 	 */
-	private List<String> getAttachments(MessagesHalRepresentation message) {
+	private List<String> getAttachments(MessagesHalRepresentation message, FirmaltDao firmalt) {
 		List<String> fileNames = new ArrayList<String>();
 		String self = message.getLinks().getLinksBy("self").get(0).getHref();
 		logger.info("self="+self);
 		
 		URI uri = URI.create(self);
 		//Get specific message
-		MessagesHalRepresentation halMessage = getMessage(uri);
+		MessagesHalRepresentation halMessage = getMessage(uri, firmalt);
 		
 		List<Link> attachmentsLink =halMessage.getLinks().getLinksBy("attachment");
 		attachmentsLink.forEach((attLink) -> {
@@ -188,7 +217,7 @@ public class ActionsServiceManager {
 			URI attUri = URI.create(attLink.getHref());
 			//Prefix Altinn-name with created_date
 			StringBuilder writeFile = new StringBuilder(halMessage.getCreatedDate().toString()).append("-").append(attLink.getName());
-			getAttachment(attUri, writeFile.toString());
+			getAttachment(attUri, writeFile.toString(), firmalt);
 			fileNames.add(writeFile.toString());
 			
 		});
@@ -197,8 +226,11 @@ public class ActionsServiceManager {
 
 	}	
 
-	private List<MessagesHalRepresentation> getMessages(URI uri){
-		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntity();
+	/*
+	 * FirmaltDao as param is her due to late fix in model. (logically not really neede.)
+	 */
+	private List<MessagesHalRepresentation> getMessages(URI uri, FirmaltDao firmaltDao){
+		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntity(firmaltDao);
 		ResponseEntity<String> responseEntity = null;
 		
 		try {
@@ -221,8 +253,11 @@ public class ActionsServiceManager {
 		
 	}	
 	
-	private MessagesHalRepresentation getMessage(URI uri){
-		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntity();
+	/*
+	 * FirmaltDao as param is her due to late fix in model. (logically not really needed.)
+	 */
+	private MessagesHalRepresentation getMessage(URI uri, FirmaltDao firmaltDao){
+		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntity(firmaltDao);
 		ResponseEntity<String> responseEntity = null;
 		
 		try {
@@ -245,8 +280,11 @@ public class ActionsServiceManager {
 		
 	}	
 
-	private void getAttachment(URI uri, String writeFile) {
-		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntityFileDownload();
+	/*
+	 * FirmaltDao as param is her due to late fix in model. (logically not really needed.)
+	 */
+	private void getAttachment(URI uri, String writeFile, FirmaltDao firmaltDao) {
+		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntityFileDownload(firmaltDao);
 		ResponseEntity<byte[]> responseEntity = null;
 
 		try {
@@ -259,7 +297,7 @@ public class ActionsServiceManager {
 				throw new RuntimeException(responseEntity.getStatusCode().toString());
 			} else {
 
-				writeToFile(writeFile, responseEntity);
+				writeToFile(writeFile, responseEntity, firmaltDao);
 
 			}
 
@@ -275,9 +313,9 @@ public class ActionsServiceManager {
 	 * For test
 	 * FileOutputStream fos = new FileOutputStream("/usr/local/Cellar/tomcat/8.0.33/libexec/webapps/altinn-proxy/WEB-INF/resources/files/" + writeFile);
 	 */
-	private void writeToFile(String writeFile, ResponseEntity<byte[]> responseEntity) throws FileNotFoundException, IOException {
+	private void writeToFile(String writeFile, ResponseEntity<byte[]> responseEntity, FirmaltDao firmaltDao) throws FileNotFoundException, IOException {
 		ByteArrayInputStream bis = new ByteArrayInputStream(responseEntity.getBody());
-		FileOutputStream fos = new FileOutputStream(authorization.getFilePath() + writeFile);
+		FileOutputStream fos = new FileOutputStream(firmaltDao.getAipath() + writeFile);
 		byte[] buffer = new byte[1024];
 		int len = 0;
 		while ((len = bis.read(buffer)) > 0) {
@@ -287,33 +325,33 @@ public class ActionsServiceManager {
 		fos.close();
 		bis.close();
 
-		logger.info("File: " + authorization.getFilePath() + writeFile + " saved on disk.");
+		logger.info("File: " + firmaltDao.getAipath() + writeFile + " saved on disk.");
 
 	}
 	
 
-	private List<MetadataHalRepresentation> getMetadata(URI uri){
-		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntity();
-		ResponseEntity<String> responseEntity = null;
-		
-		try {
-
-			responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entityHeadersOnly, String.class); 
-
-			if (responseEntity.getStatusCode() != HttpStatus.OK) {
-				logger.error("Error in getMessage for " + uri);
-				throw new RuntimeException(responseEntity.getStatusCode().toString());
-			}
-			logger.info("responseEntity.getBody"+responseEntity.getBody());
-	
-	        return HalHelper.getMetadata(responseEntity.getBody());
-
-		} catch (Exception e) {
-			String errMessage = String.format(" request failed: %s", e.getLocalizedMessage());
-			logger.warn(errMessage, e);
-			throw new RuntimeException(errMessage);
-		}
-		
-	}
+//	private List<MetadataHalRepresentation> getMetadata(URI uri){
+//		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntity();
+//		ResponseEntity<String> responseEntity = null;
+//		
+//		try {
+//
+//			responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entityHeadersOnly, String.class); 
+//
+//			if (responseEntity.getStatusCode() != HttpStatus.OK) {
+//				logger.error("Error in getMessage for " + uri);
+//				throw new RuntimeException(responseEntity.getStatusCode().toString());
+//			}
+//			logger.info("responseEntity.getBody"+responseEntity.getBody());
+//	
+//	        return HalHelper.getMetadata(responseEntity.getBody());
+//
+//		} catch (Exception e) {
+//			String errMessage = String.format(" request failed: %s", e.getLocalizedMessage());
+//			logger.warn(errMessage, e);
+//			throw new RuntimeException(errMessage);
+//		}
+//		
+//	}
 	
 }

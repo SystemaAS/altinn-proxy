@@ -14,11 +14,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import no.systema.altinn.entities.MessagesHalRepresentation;
-import no.systema.altinn.entities.MetadataHalRepresentation;
 import no.systema.altinn.entities.ServiceCode;
 import no.systema.altinn.entities.ServiceEdition;
 import no.systema.altinn.entities.ServiceOwner;
-import no.systema.altinn.integration.ActionsServiceManager;
+import no.systema.jservices.common.dao.FirmaltDao;
 import no.systema.jservices.common.dao.services.FirmaltDaoService;
 
 @PropertySource(value = { "classpath:application-test.properties" })
@@ -35,6 +34,7 @@ public class TestJActionsServiceManager {
 	public void setUp() throws Exception {
         AbstractApplicationContext  context = new AnnotationConfigApplicationContext(TestAppConfig.class);
         serviceManager = (ActionsServiceManager) context.getBean("actionsservicemanager");
+        firmaltDaoService = (FirmaltDaoService) context.getBean("firmaltDaoService");
         context.close();			
 		
 	}
@@ -99,13 +99,14 @@ public class TestJActionsServiceManager {
 	public final void testGetMessagesForServiceOwner_ServiceCode_ServiceEdition() {
 		int orgnr = 810514442;    //810514442, 910021451
 
+		List<FirmaltDao> firmaltList = firmaltDaoService.get();
+		assertNotNull(firmaltList);
 		
-		List<MessagesHalRepresentation> result2 = serviceManager.getMessages(ServiceOwner.Skatteetaten, ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor);
+		List<MessagesHalRepresentation> result2 = serviceManager.getMessages(ServiceOwner.Skatteetaten, ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, firmaltList.get(0));
 //		result2.forEach((message) ->  System.out.println("message from "+ServiceOwner.Skatteetaten+":"+message));
 		
 		printJsonView(result2);
 		
-		//TODO kolla denna för att hämta fil:https://altinnett.brreg.no/no/Altinn-API/Kom-i-gang/Meldinger/Hente-meldinger/
 	}
 	
 	@Test

@@ -2,6 +2,8 @@ package no.systema.altinn.integration;
 
 import static org.junit.Assert.assertNotNull;
 
+import java.util.List;
+
 import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,7 +15,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.http.HttpEntity;
 
 import no.systema.altinn.entities.ApiKey;
-import no.systema.altinn.integration.Authorization;
+import no.systema.jservices.common.dao.FirmaltDao;
 import no.systema.jservices.common.dao.services.FirmaltDaoService;
 
 @PropertySource(value = { "classpath:application-test.properties" })
@@ -45,7 +47,8 @@ public class TestJAuthorization {
 
 	@Test
 	public void testGetHttpEntity() {
-		HttpEntity<ApiKey> ent = auth.getHttpEntity();
+		List<FirmaltDao> firmaltList = firmaltDaoService.get();
+		HttpEntity<ApiKey> ent = auth.getHttpEntity(firmaltList.get(0));
 		logger.info("ent="+ent);
 		assertNotNull("checking", ent);
 	}	

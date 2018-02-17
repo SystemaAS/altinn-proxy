@@ -42,18 +42,8 @@ import no.systema.jservices.common.dao.services.FirmaltDaoService;
 @Service("authorization")
 public class Authorization {
 	private static Logger logger = Logger.getLogger(Authorization.class.getName());
-	
-    private String authenticationUrl;    
-    private String host;  
-    private String orgnr;
-    private String apikey;
-    private String apiUsername;	
-    private String filePath;	
-    private String apiUserpassword;		
-    private String clientSSLCertificateKeystorePassword;
-    private ClientHttpRequestFactory requestFactory;
-    private URI authUri = null;
-	
+	private List<FirmaltDao> firmaltDaoList;
+
 	@Autowired
 	private FirmaltDaoService firmaltDaoService;
 	
@@ -62,117 +52,93 @@ public class Authorization {
 	
     @PostConstruct
 	public void constructor() {
-    	FirmaltDao firmaltDao = firmaltDaoService.get();
-    	logger.info("Autowired firmaltDaoService, config-data="+ReflectionToStringBuilder.toString(firmaltDao));
-    	
-    	authenticationUrl = firmaltDao.getAiauur();
-    	assert authenticationUrl != null;
-
-		apikey = firmaltDao.getAiapi();
-		assert apikey != null;
-
-		apiUsername = firmaltDao.getAiuser();
-		assert apiUsername != null;
-
-		apiUserpassword = firmaltDao.getAiupwd();
-		assert apiUserpassword != null;
-		
-		host = firmaltDao.getAihost();
-		assert host != null;
-		
-		clientSSLCertificateKeystorePassword = firmaltDao.getAipwd();
-		assert clientSSLCertificateKeystorePassword != null;
-
-		orgnr = firmaltDao.getAiorg();
-		assert orgnr != null;
-		
-		filePath = firmaltDao.getAipath();
-		assert filePath != null;
-		
-		authUri = ActionsUriBuilder.authentication(host, authenticationUrl);
-		
-		try {
-			requestFactory = getRequestFactory();
-		} catch (KeyStoreException | IOException | UnrecoverableKeyException | NoSuchAlgorithmException
-				| CertificateException | KeyManagementException e) {
-			throw new RuntimeException(e);
-		}
+    	firmaltDaoList = firmaltDaoService.get();
+    	logger.info("Autowired firmaltDaoService, config-data=");firmaltDaoList.forEach(dao -> logger.info(ReflectionToStringBuilder.toString(dao)));
 	}		
 	
-	
 	/**
-	 * Configures ClientHttpRequestFactory to provide client certificate for two
-	 * way https connection.
-	 *
+	 * Configures ClientHttpRequestFactory to provide client certificate for two way https connection.<br>
+	 * Support TLS-versions: TLSv1, TLSv1.1
+	 * 
+	 * @param firmaltDao
 	 * @return the ClientHttpRequestFactory with configured SSLContext
-	 * @throws KeyStoreException
-	 * @throws IOException
-	 * @throws UnrecoverableKeyException
-	 * @throws NoSuchAlgorithmException
-	 * @throws CertificateException
-	 * @throws KeyManagementException
 	 */
-	public ClientHttpRequestFactory getRequestFactory() throws KeyStoreException, IOException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException, KeyManagementException {
+	public ClientHttpRequestFactory getRequestFactory(FirmaltDao firmaltDao) { 
 		String[] TLS_PROTOCOLS = {"TLSv1", "TLSv1.1" /*, "TLSv1.2"*/}; // Comment in TLSv1.2 to fail : bug in altinn or java that fails TLS handshake most of the time, but not always
 		String[] CIPHER_SUITES = null; // {"TLS_RSA_WITH_AES_128_GCM_SHA256"};
 
-		char[] password = clientSSLCertificateKeystorePassword.toCharArray();
+		char[] password = firmaltDao.getAipwd().toCharArray();
 
-		KeyStore keyStore = KeyStore.getInstance("PKCS12");
-		keyStore.load(certificateManager.loadCertificate(), password);
+		HttpComponentsClientHttpRequestFactory requestFactory;
+		
+		try {
+			KeyStore keyStore = KeyStore.getInstance("PKCS12");
+			keyStore.load(certificateManager.loadCertificate(), password);
 
-		/*
-	     * Determines whether the certificate chain can be trusted without consulting the trust manager
-	     * configured in the actual SSL context. This method can be used to override the standard JSSE
-	     * certificate verification process.
-	     * <p>
-	     * Please note that, if this method returns {@code false}, the trust manager configured
-	     * in the actual SSL context can still clear the certificate as trusted.
-	     *
-	     * @param chain the peer certificate chain
-	     * @param authType the authentication type based on the client certificate
-	     * @return {@code true} if the certificate can be trusted without verification by
-	     *   the trust manager, {@code false} otherwise.
-	     * @throws CertificateException thrown if the certificate is not trusted or invalid.
-	     */	
-		TrustStrategy acceptingTrustStrategy = (chain, authType) -> true;
+			/*
+			 * Determines whether the certificate chain can be trusted without consulting the trust manager
+			 * configured in the actual SSL context. This method can be used to override the standard JSSE
+			 * certificate verification process.
+			 * <p>
+			 * Please note that, if this method returns {@code false}, the trust manager configured
+			 * in the actual SSL context can still clear the certificate as trusted.
+			 *
+			 * @param chain the peer certificate chain
+			 * @param authType the authentication type based on the client certificate
+			 * @return {@code true} if the certificate can be trusted without verification by
+			 *   the trust manager, {@code false} otherwise.
+			 * @throws CertificateException thrown if the certificate is not trusted or invalid.
+			 */	
+			TrustStrategy acceptingTrustStrategy = (chain, authType) -> true;
 
-		SSLContext sslContext = SSLContexts.custom()
-				.loadKeyMaterial(keyStore, password)
-				.loadTrustMaterial(null, acceptingTrustStrategy)
-				.build();
+			SSLContext sslContext = SSLContexts.custom()
+					.loadKeyMaterial(keyStore, password)
+					.loadTrustMaterial(null, acceptingTrustStrategy)
+					.build();
 
 
-		SSLConnectionSocketFactory sslSocketFactory = new SSLConnectionSocketFactory(sslContext, TLS_PROTOCOLS, CIPHER_SUITES,
-				new DefaultHostnameVerifier());
+			SSLConnectionSocketFactory sslSocketFactory = new SSLConnectionSocketFactory(sslContext, TLS_PROTOCOLS, CIPHER_SUITES,
+					new DefaultHostnameVerifier());
 
-		HttpClient httpClient = HttpClients.custom()
-				.setSSLSocketFactory(sslSocketFactory)
-				.build();
+			HttpClient httpClient = HttpClients.custom()
+					.setSSLSocketFactory(sslSocketFactory)
+					.build();
 
-		HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
-		requestFactory.setHttpClient(httpClient);
+			requestFactory = new HttpComponentsClientHttpRequestFactory();
+			requestFactory.setHttpClient(httpClient);
+			
+		} catch (KeyManagementException | UnrecoverableKeyException | KeyStoreException | NoSuchAlgorithmException | CertificateException | IOException e) {
+			logger.error("ERROR: loading certificate!",e);
+			throw new RuntimeException(e);
+		}
 
 		return requestFactory;
 
 	}
 
-    public HttpEntity<ApiKey> getHttpEntity()  {
-        RestTemplate restTemplate = new RestTemplate(requestFactory);
+	/**
+	 * Get a prepared HTTPHeader.
+	 * 
+	 * @param firmaltDao
+	 * @return HttpEntity<ApiKey>
+	 */
+    public HttpEntity<ApiKey> getHttpEntity(FirmaltDao firmaltDao)  {
+        RestTemplate restTemplate = new RestTemplate(getRequestFactory(firmaltDao));
 		restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
         
 		ApiKey apiKeyDto = new ApiKey();		
-		apiKeyDto.setUserName(apiUsername);
-		apiKeyDto.setUserPassword(apiUserpassword);
+		apiKeyDto.setUserName(firmaltDao.getAiuser());
+		apiKeyDto.setUserPassword(firmaltDao.getAiupwd());
 
 		MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
 		headers.add(HttpHeaders.CONTENT_TYPE, "application/hal+json");
 		headers.add(HttpHeaders.ACCEPT, "application/hal+json");
-		headers.add(HttpHeaders.HOST, host);
-		headers.add("ApiKey", apikey);
+		headers.add(HttpHeaders.HOST, firmaltDao.getAihost());
+		headers.add("ApiKey", firmaltDao.getAiapi());
 
 		HttpEntity<ApiKey> entity = new HttpEntity<ApiKey>(apiKeyDto, headers);
-
+		URI authUri = ActionsUriBuilder.authentication(firmaltDao.getAihost(), firmaltDao.getAiauur());
+		
 		ResponseEntity<byte[]> response = restTemplate.exchange(authUri, HttpMethod.POST, entity, byte[].class);			
 		logger.info("response="+response);
 		
@@ -181,8 +147,8 @@ public class Authorization {
 		try {
 			cookie = setCookieList.get(0); 
 		} catch (Exception e) {
-			logger.error("Could not get Cookie from "+host, e);
-			throw new RuntimeException("Could not get Cookie from "+host, e);
+			logger.error("Could not get Cookie from "+firmaltDao.getAihost(), e);
+			throw new RuntimeException("Could not get Cookie from "+firmaltDao.getAihost(), e);
 		}
 		headers.add(HttpHeaders.COOKIE, cookie);
 		HttpEntity<ApiKey> entityHeadersOnly = new HttpEntity<ApiKey>( headers);		
@@ -191,26 +157,28 @@ public class Authorization {
 
     }   
  
-    /**
-     * Get HttpEntity for filedownload
-     * 
-     * @return 
-     */
-    public HttpEntity<ApiKey> getHttpEntityFileDownload()  {
-        RestTemplate restTemplate = new RestTemplate(requestFactory);
+	/**
+	 * Get a prepared HTTPHeader for filedownload
+	 * 
+	 * @param firmaltDao
+	 * @return HttpEntity<ApiKey>
+	 */
+    public HttpEntity<ApiKey> getHttpEntityFileDownload(FirmaltDao firmaltDao)  {
+        RestTemplate restTemplate = new RestTemplate(getRequestFactory(firmaltDao));
 		restTemplate.getMessageConverters().add(new ByteArrayHttpMessageConverter());
         
 		ApiKey apiKeyDto = new ApiKey();		
-		apiKeyDto.setUserName(apiUsername);
-		apiKeyDto.setUserPassword(apiUserpassword);
+		apiKeyDto.setUserName(firmaltDao.getAiuser());
+		apiKeyDto.setUserPassword(firmaltDao.getAiupwd());
 
 		MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
 		headers.add(HttpHeaders.CONTENT_TYPE, "application/hal+json");
 		headers.add(HttpHeaders.ACCEPT, "application/octet-stream");  
-		headers.add(HttpHeaders.HOST, host);
-		headers.add("ApiKey", apikey);
+		headers.add(HttpHeaders.HOST, firmaltDao.getAihost());
+		headers.add("ApiKey", firmaltDao.getAiapi());
 
 		HttpEntity<ApiKey> entity = new HttpEntity<ApiKey>(apiKeyDto, headers);
+		URI authUri = ActionsUriBuilder.authentication(firmaltDao.getAihost(), firmaltDao.getAiauur());
 
 		ResponseEntity<byte[]> response = restTemplate.exchange(authUri, HttpMethod.POST, entity, byte[].class);			
 		logger.info("response="+response);
@@ -220,41 +188,23 @@ public class Authorization {
 		try {
 			cookie = setCookieList.get(0); 
 		} catch (Exception e) {
-			logger.error("Could not get Cookie from "+host, e);
-			throw new RuntimeException("Could not get Cookie from "+host, e);
+			logger.error("Could not get Cookie from "+firmaltDao.getAihost(), e);
+			throw new RuntimeException("Could not get Cookie from "+firmaltDao.getAihost(), e);
 		}
 		headers.add(HttpHeaders.COOKIE, cookie);
 		HttpEntity<ApiKey> entityHeadersOnly = new HttpEntity<ApiKey>( headers);		
 		
 		return entityHeadersOnly;
 
-    }      
-    
-    /**
-     * Return Altinn host
-     * 
-     * @return host
-     */
-    public String getHost() {
-    	return host;
     }
 
     /**
-     * Return firma organisationsnummer
+     * Get list of FirmaltDao initiated in @PostContruct
      * 
-     * @return orgnr
+     * @return List<FirmaltDao>
      */
-	public String getOrgnr() {
-		return orgnr;
-	}
-
-	/**
-	 * Get the path to store the downloaded file.
-	 * 
-	 * @return
-	 */
-	public String getFilePath() {
-		return filePath;
+	public List<FirmaltDao> getFirmaltDaoList() {
+		return firmaltDaoList;
 	}
 
 }
