@@ -14,7 +14,7 @@ For more detailed info, see [usecase](UC.md)
 
 ### Features
 * Read messages from the organisation innbox; filtered on ServiceOwner SKD, ServiceCode 5012, ServiceEdition 171208 and current day. 
-* Download attachment i messages: Automatic once per today (03.00) and/or manually.
+* Download attachment i messages: Automatic once per today (06.00) and/or manually.
 
 
 ### Set-up
