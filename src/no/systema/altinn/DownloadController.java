@@ -16,7 +16,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.jakewharton.fliptables.FlipTableConverters;
+
 import no.systema.altinn.entities.MessagesHalRepresentation;
+import no.systema.altinn.entities.PrettyPrintAttachments;
 import no.systema.altinn.integration.ActionsServiceManager;
 import no.systema.jservices.common.dao.FirmaltDao;
 import no.systema.jservices.common.dao.services.BridfDaoService;
@@ -53,7 +56,7 @@ public class DownloadController {
 			
 			//Ignoring date-filter
 			String forceAll = request.getParameter("forceAll");
-			List<String> dagsoppgors = serviceManager.putDagsobjorAttachmentsToPath(Boolean.valueOf(forceAll));
+			List<PrettyPrintAttachments> dagsoppgors = serviceManager.putDagsobjorAttachmentsToPath(Boolean.valueOf(forceAll));
 			
 			logger.info("serviceManager.putDagsobjorAttachmentsToPath(boolean forceAll) executed...forceAll="+forceAll);
 
@@ -61,9 +64,7 @@ public class DownloadController {
 
 			sb.append("Path till filer finnes i fil:FIRMALT og felt: AIPATH \n \n");
 			
-			sb.append("Filer:\n");
-			dagsoppgors.forEach(dp -> sb.append(dp+"\n"));
-			
+			sb.append(FlipTableConverters.fromIterable(dagsoppgors, PrettyPrintAttachments.class));
 			
 		} catch (Exception e) {
 			// write std.output error output
@@ -109,14 +110,12 @@ public class DownloadController {
 			List<MessagesHalRepresentation> messages = serviceManager.getMessages(Boolean.valueOf(forceDetails));
 			
 			logger.info("serviceManager.getMessages()");
+			logger.info(FlipTableConverters.fromIterable(messages, MessagesHalRepresentation.class));
 
 			sb.append("Alle meldinger i innboksen. \n \n");
 			
 			sb.append("Meldinger:\n");
-//			messages.forEach(message -> sb.append(message+"\n \n"));
-			
-			messages.forEach(message -> sb.append(message.toString()+"\n \n"));
-			
+			sb.append(FlipTableConverters.fromIterable(messages, MessagesHalRepresentation.class));
 			
 		} catch (Exception e) {
 			// write std.output error output
