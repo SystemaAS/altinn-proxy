@@ -27,6 +27,7 @@ import de.otto.edison.hal.Link;
 import no.systema.altinn.entities.ApiKey;
 import no.systema.altinn.entities.MessagesHalRepresentation;
 import no.systema.altinn.entities.PrettyPrintAttachments;
+import no.systema.altinn.entities.PrettyPrintMessages;
 import no.systema.altinn.entities.ServiceCode;
 import no.systema.altinn.entities.ServiceEdition;
 import no.systema.altinn.entities.ServiceOwner;
@@ -64,21 +65,32 @@ public class ActionsServiceManager {
 	 * 
 	 * @see {@link ActionsUriBuilder}
 	 * @param forceDetails, convenience for troubleshooting, typical use is false.
-	 * @return List<MessagesHalRepresentation>
+	 * @return List<PrettyPrintMessages>
 	 */
-	public List<MessagesHalRepresentation> getMessages(boolean forceDetails) {
-		final List<MessagesHalRepresentation> result = new ArrayList<MessagesHalRepresentation>();
+	public List<PrettyPrintMessages> getMessages(boolean forceDetails) {
+		final List<PrettyPrintMessages> result = new ArrayList<PrettyPrintMessages>();
 		authorization.getFirmaltDaoList().forEach(firmalt -> {
 			URI uri = ActionsUriBuilder.messages(firmalt.getAihost(), firmalt.getAiorg());
 			if (forceDetails) {
 				List<MessagesHalRepresentation> messages = getMessages(uri, firmalt);
+
 				messages.forEach((message) -> {
 					String self = message.getLinks().getLinksBy("self").get(0).getHref();
-					result.add(getMessage(URI.create(self),firmalt));
+					MessagesHalRepresentation halMessage = getMessage(URI.create(self),firmalt);
+					PrettyPrintMessages log = new PrettyPrintMessages(firmalt.getAiorg(), LocalDateTime.now().toString(),halMessage.getCreatedDate().toString(), 
+							halMessage.getSubject(), ServiceOwner.Skatteetaten.name(), ServiceCode.Dagsobjor.name(), ServiceEdition.Dagsobjor.name() );
+					result.add(log);
 				});
 	
 			} else {
-				result.addAll(getMessages(uri, firmalt));
+				List<MessagesHalRepresentation> messages = getMessages(uri, firmalt);
+
+				messages.forEach((message) -> {
+					PrettyPrintMessages log = new PrettyPrintMessages(firmalt.getAiorg(), LocalDateTime.now().toString(),message.getCreatedDate().toString(), 
+							message.getSubject(), ServiceOwner.Skatteetaten.name(), ServiceCode.Dagsobjor.name(), ServiceEdition.Dagsobjor.name() );
+					result.add(log);
+				});				
+			
 			}
 		});
 

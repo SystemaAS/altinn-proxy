@@ -18,18 +18,26 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.jakewharton.fliptables.FlipTableConverters;
 
-import no.systema.altinn.entities.MessagesHalRepresentation;
 import no.systema.altinn.entities.PrettyPrintAttachments;
+import no.systema.altinn.entities.PrettyPrintMessages;
 import no.systema.altinn.integration.ActionsServiceManager;
 import no.systema.jservices.common.dao.FirmaltDao;
 import no.systema.jservices.common.dao.services.BridfDaoService;
-
+/**
+ * This controller is mainly for troubleshooting. <br>
+ * 
+ * It adresses the "real" implementation of download dagsoppgjor, here doing in manuelly.
+ * 
+ * 
+ * @author fredrikmoller
+ * @date 2018-02
+ *
+ */
 @Controller
 public class DownloadController {
 	private static Logger logger = Logger.getLogger(DownloadController.class.getName());
 
 	/**
-	 * Entrance for accessing info in secure www.altinn.no, using .P12 certificate
 	 * 
 	 * Files are downloaded into path define in {@linkplain FirmaltDao}.aipath
 	 * 
@@ -81,9 +89,8 @@ public class DownloadController {
 	}
 
 	/**
-	 * Entrance for accessing info in secure www.altinn.no, using .P12 certificate
 	 * 
-	 * Read all meldinger i virksomhets innboks
+	 * Read all meldinger i virksomhet(er)s innboks(er)
 	 * 
 	 * 
 	 * @Example: http://gw.systema.no:8080/altinn-proxy/readInnboks.do?user=FREDRIK&forceDetails=false
@@ -107,15 +114,15 @@ public class DownloadController {
 			
 			String forceDetails = request.getParameter("forceDetails");
 			
-			List<MessagesHalRepresentation> messages = serviceManager.getMessages(Boolean.valueOf(forceDetails));
+			List<PrettyPrintMessages> messages = serviceManager.getMessages(Boolean.valueOf(forceDetails));
 			
 			logger.info("serviceManager.getMessages()");
-			logger.info(FlipTableConverters.fromIterable(messages, MessagesHalRepresentation.class));
+			logger.info(FlipTableConverters.fromIterable(messages, PrettyPrintMessages.class));
 
 			sb.append("Alle meldinger i innboksen. \n \n");
 			
 			sb.append("Meldinger:\n");
-			sb.append(FlipTableConverters.fromIterable(messages, MessagesHalRepresentation.class));
+			sb.append(FlipTableConverters.fromIterable(messages, PrettyPrintMessages.class));
 			
 		} catch (Exception e) {
 			// write std.output error output
@@ -130,13 +137,6 @@ public class DownloadController {
 		return sb.toString();
 
 	}
-	
-	
-	
-	
-	
-	
-	
 	
 	@Autowired
 	private BridfDaoService bridfDaoService;
