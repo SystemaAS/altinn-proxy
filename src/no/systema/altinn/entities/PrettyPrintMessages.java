@@ -15,9 +15,9 @@ public class PrettyPrintMessages {
 	private String subject;
 	private String serviceEier;
 	private String serviceKode;
-	private String serviceUtgave;
+	private int serviceUtgave;
 
-	public PrettyPrintMessages(String orgnr, String nedlastingsDato, String skapetDato, String subject, String serviceEier, String serviceKode, String serviceUtgave) {
+	public PrettyPrintMessages(String orgnr, String nedlastingsDato, String skapetDato, String subject, String serviceEier, String serviceKode, int serviceUtgave) {
 		this.orgnr = orgnr;
 		this.nedlastingsDato = nedlastingsDato;
 		this.skapetDato = skapetDato;
@@ -75,11 +75,11 @@ public class PrettyPrintMessages {
 		this.serviceKode = serviceKode;
 	}
 
-	public String getServiceUtgave() {
+	public int getServiceUtgave() {
 		return serviceUtgave;
 	}
 
-	public void setServiceUtgave(String serviceUtgave) {
+	public void setServiceUtgave(int serviceUtgave) {
 		this.serviceUtgave = serviceUtgave;
 	}
 

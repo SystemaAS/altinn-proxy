@@ -78,7 +78,8 @@ public class ActionsServiceManager {
 					String self = message.getLinks().getLinksBy("self").get(0).getHref();
 					MessagesHalRepresentation halMessage = getMessage(URI.create(self),firmalt);
 					PrettyPrintMessages log = new PrettyPrintMessages(firmalt.getAiorg(), LocalDateTime.now().toString(),halMessage.getCreatedDate().toString(), 
-							halMessage.getSubject(), ServiceOwner.Skatteetaten.name(), ServiceCode.Dagsobjor.name(), ServiceEdition.Dagsobjor.name() );
+							halMessage.getSubject(), halMessage.getServiceOwner(), halMessage.getServiceCode(), halMessage.getServiceEdition() );
+
 					result.add(log);
 				});
 	
@@ -87,7 +88,8 @@ public class ActionsServiceManager {
 
 				messages.forEach((message) -> {
 					PrettyPrintMessages log = new PrettyPrintMessages(firmalt.getAiorg(), LocalDateTime.now().toString(),message.getCreatedDate().toString(), 
-							message.getSubject(), ServiceOwner.Skatteetaten.name(), ServiceCode.Dagsobjor.name(), ServiceEdition.Dagsobjor.name() );
+							message.getSubject(), message.getServiceOwner(), message.getServiceCode(), message.getServiceEdition() );
+
 					result.add(log);
 				});				
 			
@@ -342,30 +344,5 @@ public class ActionsServiceManager {
 		logger.info("File: " + firmaltDao.getAipath() + writeFile + " saved on disk.");
 
 	}
-	
-
-//	private List<MetadataHalRepresentation> getMetadata(URI uri){
-//		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntity();
-//		ResponseEntity<String> responseEntity = null;
-//		
-//		try {
-//
-//			responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entityHeadersOnly, String.class); 
-//
-//			if (responseEntity.getStatusCode() != HttpStatus.OK) {
-//				logger.error("Error in getMessage for " + uri);
-//				throw new RuntimeException(responseEntity.getStatusCode().toString());
-//			}
-//			logger.info("responseEntity.getBody"+responseEntity.getBody());
-//	
-//	        return HalHelper.getMetadata(responseEntity.getBody());
-//
-//		} catch (Exception e) {
-//			String errMessage = String.format(" request failed: %s", e.getLocalizedMessage());
-//			logger.warn(errMessage, e);
-//			throw new RuntimeException(errMessage);
-//		}
-//		
-//	}
 	
 }

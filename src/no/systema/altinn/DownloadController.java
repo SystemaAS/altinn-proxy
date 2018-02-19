@@ -26,7 +26,7 @@ import no.systema.jservices.common.dao.services.BridfDaoService;
 /**
  * This controller is mainly for troubleshooting. <br>
  * 
- * It adresses the "real" implementation of download dagsoppgjor, here doing in manuelly.
+ * It adresses the "real" implementation of download dagsoppgjor, here doing in manually.
  * 
  * 
  * @author fredrikmoller
@@ -44,6 +44,7 @@ public class DownloadController {
 	 * Note: No state-handling of messages in Altinn!
 	 * 
 	 * @Example: http://gw.systema.no:8080/altinn-proxy/downloadDagsobjor.do?user=FREDRIK&forceAll=false
+	 * forceAll=true remove filter on GET attachment.
 	 * 
 	 * @param session
 	 * @param request, user 
@@ -94,6 +95,7 @@ public class DownloadController {
 	 * 
 	 * 
 	 * @Example: http://gw.systema.no:8080/altinn-proxy/readInnboks.do?user=FREDRIK&forceDetails=false
+	 * forceDetails=true is adding more data on using 'self'-link, not recommeded to use.
 	 * 
 	 * @param session
 	 * @param request, user 
