@@ -182,7 +182,9 @@ public class ActionsServiceManager {
 					logRecords.addAll(getAttachments(message, firmalt));
 				});
 				
-				updateDownloadDato(firmalt);
+				if (!dagsobjors.isEmpty()) {
+					updateDownloadDato(firmalt);
+				}
 				
 			} else {
 				if (!isDownloadedToday(firmalt)) {
@@ -226,7 +228,9 @@ public class ActionsServiceManager {
 			logRecords.addAll(getAttachments(message, firmalt));
 		});	
 		
-		updateDownloadDato(firmalt);
+		if (!dagsobjors.isEmpty()) {
+			updateDownloadDato(firmalt);
+		}
 	
 		return logRecords;
 		
