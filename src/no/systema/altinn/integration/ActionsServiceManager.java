@@ -178,14 +178,7 @@ public class ActionsServiceManager {
 			
 			});
 		} else {
-			authorization.getFirmaltDaoList().forEach(firmalt -> {			
-				List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, LocalDateTime.now().minusDays(1),firmalt);
-
-				dagsobjors.forEach((message) -> {
-					logRecords.addAll(getAttachments(message, firmalt));
-				});		
-			
-			});
+			getDagsoppgjorForToday(logRecords);
 		}
 
 		logger.info("Dagsoppgjors attachments are downloaded.");
@@ -195,17 +188,11 @@ public class ActionsServiceManager {
 
 	}
 
+
 	@Scheduled(cron="${altinn.file.download.cron.pattern}")
 	private List<PrettyPrintAttachments> putDagsobjorAttachmentsToPath() {
 		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
-		authorization.getFirmaltDaoList().forEach(firmalt -> {			
-			List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, LocalDateTime.now().minusDays(1),firmalt);
-		
-			dagsobjors.forEach((message) -> {
-				logRecords.addAll(getAttachments(message, firmalt));
-			});		
-
-		});
+		getDagsoppgjorForToday(logRecords);
 		
 		logger.info("Scheduled download of Dagsoppgjors attachments is executed.");
 		logger.info(FlipTableConverters.fromIterable(logRecords, PrettyPrintAttachments.class));
@@ -214,13 +201,25 @@ public class ActionsServiceManager {
 
 	}	
 	
+	private void getDagsoppgjorForToday(List<PrettyPrintAttachments> logRecords) {
+		authorization.getFirmaltDaoList().forEach(firmalt -> {			
+			List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, LocalDateTime.now().minusDays(1),firmalt);
+
+			dagsobjors.forEach((message) -> {
+				logRecords.addAll(getAttachments(message, firmalt));
+			});		
+		
+		});
+	}
+	
+	
 	/*
 	 * Get all attachments in message, e.i. PDF and XML
 	 */
 	private List<PrettyPrintAttachments> getAttachments(MessagesHalRepresentation message, FirmaltDao firmalt) {
 		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
 		String self = message.getLinks().getLinksBy("self").get(0).getHref();
-		logger.info("self="+self);
+//		logger.info("self="+self);
 		
 		URI uri = URI.create(self);
 		//Get specific message
@@ -228,12 +227,12 @@ public class ActionsServiceManager {
 		
 		List<Link> attachmentsLink =halMessage.getLinks().getLinksBy("attachment");
 		attachmentsLink.forEach((attLink) -> {
-			logger.info("attLink="+attLink);
+//			logger.info("attLink="+attLink);
 			URI attUri = URI.create(attLink.getHref());
 			//Prefix Altinn-name with created_date
 			StringBuilder writeFile = new StringBuilder(halMessage.getCreatedDate().toString()).append("-").append(attLink.getName());
 			getAttachment(attUri, writeFile.toString(), firmalt);
-			PrettyPrintAttachments log = new PrettyPrintAttachments(firmalt.getAiorg(), LocalDateTime.now().toString(),halMessage.getCreatedDate().toString(), writeFile.toString(), ServiceOwner.Skatteetaten.name() );
+			PrettyPrintAttachments log = new PrettyPrintAttachments(firmalt.getAiorg(), LocalDateTime.now().toString(),halMessage.getCreatedDate().toString(), writeFile.toString(), halMessage.getServiceOwner() );
 			logRecords.add(log);
 			
 		});
