@@ -2,8 +2,11 @@ package no.systema.altinn.integration;
 
 import static org.junit.Assert.assertNotNull;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -14,11 +17,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import no.systema.altinn.entities.MessagesHalRepresentation;
+import no.systema.altinn.entities.PrettyPrintMessages;
 import no.systema.altinn.entities.ServiceCode;
 import no.systema.altinn.entities.ServiceEdition;
 import no.systema.altinn.entities.ServiceOwner;
 import no.systema.jservices.common.dao.FirmaltDao;
 import no.systema.jservices.common.dao.services.FirmaltDaoService;
+import no.systema.jservices.common.util.DateTimeManager;
 
 @PropertySource(value = { "classpath:application-test.properties" })
 public class TestJActionsServiceManager {
@@ -30,7 +35,7 @@ public class TestJActionsServiceManager {
 	String KIRKENES = "910021451";
 	
 	
-	@Before
+	//@Before
 	public void setUp() throws Exception {
         AbstractApplicationContext  context = new AnnotationConfigApplicationContext(TestAppConfig.class);
         serviceManager = (ActionsServiceManager) context.getBean("actionsservicemanager");
@@ -78,7 +83,7 @@ public class TestJActionsServiceManager {
 	@Test
 	public final void testGetMessages() {
 		int orgnr = 810514442;    //810514442, 910021451
-		List<MessagesHalRepresentation> result = serviceManager.getMessages(false);
+		List<PrettyPrintMessages> result = serviceManager.getMessages(false);
 		
 		System.out.println("result.size="+result.size());
 		
@@ -115,8 +120,47 @@ public class TestJActionsServiceManager {
 		serviceManager.putDagsobjorAttachmentsToPath(false);
 //		result2.forEach((message) ->  System.out.println("message from "+ServiceOwner.Skatteetaten+":"+message));
 		
-	}	
+	}
+	
+	@Test
+	public final void testGetDownloadDatoCheck() {
+		FirmaltDao dao = new FirmaltDao();
+		dao.setAidato(20180219);
+		//boolean isDownloaded = serviceManager.isDownloadedToday(dao);
+		boolean isDownloaded = isDownloadedToday(dao);
+		//Code ripped due to bean-loading issues
+		
+		
+		Assert.assertFalse("Should not be set as downloaded.", isDownloaded);
+		
+	}		
+	
+	boolean isDownloadedToday(FirmaltDao firmalt) {
+		//Sanity check
+		if (firmalt.getAidato() == 0) {
+			throw new RuntimeException("FIRMALT.aidato not set!");
+		}
+		DateTimeManager dtm = new DateTimeManager();
+		String nowString = dtm.getCurrentDate_ISO();
+		int now = Integer.valueOf(nowString);
+		
+		System.out.println("nowString="+nowString);
+		System.out.println("now="+now);
+		System.out.println("firmalt.getAidato()="+firmalt.getAidato());
+		
+		if (firmalt.getAidato() < now) {
+			return false;
+		} else {
+			return true;
+		}
 
+	}
+	
+	
+	
+	
+	
+	
 	static void printJsonView(List<MessagesHalRepresentation> messages)  {
 	   final ObjectMapper mapper = new ObjectMapper();
 	    

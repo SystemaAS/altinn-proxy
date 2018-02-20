@@ -34,8 +34,6 @@ public class HalHelper {
                 .as(HalRepresentation.class, withEmbedded("messages", MessagesHalRepresentation.class));
         final List<MessagesHalRepresentation> embeddedMessages = result.getEmbedded().getItemsBy("messages", MessagesHalRepresentation.class);
         
-//        embeddedMessages.forEach((message) -> logger.info(ReflectionToStringBuilder.toString(message)));		
-        
         return embeddedMessages;
 
 	}
@@ -51,30 +49,8 @@ public class HalHelper {
         final MessagesHalRepresentation result = parse(body)
                 .as(MessagesHalRepresentation.class);//, withEmbedded("messages", MessagesHalRepresentation.class));
         
-//        embeddedMessages.forEach((message) -> logger.info(ReflectionToStringBuilder.toString(message)));		
-        
         return result;
 
 	}	
-	
-	
-	
-
-	/**
-	 * Return Hal representations of metadata
-	 * 
-	 * @param body
-	 * @return List<MetadataHalRepresentation> embeddedMetadata
-	 * @throws IOException
-	 */
-	public static List<MetadataHalRepresentation> getMetadata(String body) throws IOException {
-        final HalRepresentation result = parse(body)
-                .as(MetadataHalRepresentation.class, withEmbedded("metadata", MetadataHalRepresentation.class));
-        final List<MetadataHalRepresentation> embeddedMetadata = result.getEmbedded().getItemsBy("metadata", MetadataHalRepresentation.class);
-   
-//        embeddedMetadata.forEach((metadata) -> logger.info(ReflectionToStringBuilder.toString(metadata)));		
-        
-        return embeddedMetadata;
-	}
 
 }

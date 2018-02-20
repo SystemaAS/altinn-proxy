@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +33,8 @@ import no.systema.altinn.entities.ServiceCode;
 import no.systema.altinn.entities.ServiceEdition;
 import no.systema.altinn.entities.ServiceOwner;
 import no.systema.jservices.common.dao.FirmaltDao;
+import no.systema.jservices.common.dao.services.FirmaltDaoService;
+import no.systema.jservices.common.util.DateTimeManager;
 
 /**
  * The responsible service manager for accessing resources inside www.altinn.no <br>
@@ -51,6 +54,9 @@ public class ActionsServiceManager {
 	
 	@Autowired
 	private Authorization authorization;
+	
+	@Autowired
+	private FirmaltDaoService firmaltDaoService;
 
 	@Bean
 	public RestTemplate restTemplate() {
@@ -163,23 +169,27 @@ public class ActionsServiceManager {
 	 * Retrieves all attachment in Melding: Dagsoppgjor, for today <br>
 	 * and stores as defined in {@linkplain FirmaltDao}.aipath
 	 * 
-	 * @param forceAll, convenience for troubleshooting, typical use is false.
+	 * @param forceAll removes filter day, convenience for troubleshooting manually, typical use is false.
 	 * @return List of fileNames
 	 */
 	public List<PrettyPrintAttachments> putDagsobjorAttachmentsToPath(boolean forceAll) {
 		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
-		if (forceAll) {
-			authorization.getFirmaltDaoList().forEach(firmalt -> {	
-				List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, firmalt);
+		authorization.getFirmaltDaoList().forEach(firmalt -> {	
+			if (forceAll) {
+				List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten, ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, firmalt);
 
 				dagsobjors.forEach((message) -> {
 					logRecords.addAll(getAttachments(message, firmalt));
-				});		
-			
-			});
-		} else {
-			getDagsoppgjorForToday(logRecords);
-		}
+				});
+				
+				updateDownloadDato(firmalt);
+				
+			} else {
+				if (!isDownloadedToday(firmalt)) {
+					logRecords.addAll(getDagsoppgjorForToday(firmalt));
+				}
+			}
+		});
 
 		logger.info("Dagsoppgjors attachments are downloaded.");
 		logger.info(FlipTableConverters.fromIterable(logRecords, PrettyPrintAttachments.class));
@@ -192,26 +202,69 @@ public class ActionsServiceManager {
 	@Scheduled(cron="${altinn.file.download.cron.pattern}")
 	private List<PrettyPrintAttachments> putDagsobjorAttachmentsToPath() {
 		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
-		getDagsoppgjorForToday(logRecords);
-		
-		logger.info("Scheduled download of Dagsoppgjors attachments is executed.");
-		logger.info(FlipTableConverters.fromIterable(logRecords, PrettyPrintAttachments.class));
+		authorization.getFirmaltDaoList().forEach(firmalt -> {	
+			if (!isDownloadedToday(firmalt)) {
+				logRecords.addAll(getDagsoppgjorForToday(firmalt));	
+
+				logger.info("Scheduled download of Dagsoppgjors attachments is executed.");
+				logger.info(FlipTableConverters.fromIterable(logRecords, PrettyPrintAttachments.class));
+			} else {
+				logger.info("Already downloaded today.");
+			}
+			
+		});
 		
 		return logRecords;
 
 	}	
 	
-	private void getDagsoppgjorForToday(List<PrettyPrintAttachments> logRecords) {
-		authorization.getFirmaltDaoList().forEach(firmalt -> {			
-			List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, LocalDateTime.now().minusDays(1),firmalt);
+	private List<PrettyPrintAttachments> getDagsoppgjorForToday(FirmaltDao firmalt) {
+		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
+		List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, LocalDateTime.now().minusDays(1),firmalt);
 
-			dagsobjors.forEach((message) -> {
-				logRecords.addAll(getAttachments(message, firmalt));
-			});		
+		dagsobjors.forEach((message) -> {
+			logRecords.addAll(getAttachments(message, firmalt));
+		});	
 		
-		});
+		updateDownloadDato(firmalt);
+	
+		return logRecords;
+		
 	}
 	
+	
+	private void updateDownloadDato(FirmaltDao firmalt) {
+		LocalDateTime now = LocalDateTime.now();
+		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd"); //as defined in Firmalt.
+		String nowDate = now.format(dateFormatter);
+		int aidato = Integer.valueOf(nowDate);
+		
+		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HHmmss");  //as defined in Firmalt.
+		String nowTime = now.format(timeFormatter);
+		int aitid = Integer.valueOf(nowTime);		
+		
+		firmalt.setAidato(aidato);
+		firmalt.setAitid(aitid);
+		firmaltDaoService.update(firmalt);
+		
+	}
+
+	private boolean isDownloadedToday(FirmaltDao firmalt) {
+		//Sanity check
+		if (firmalt.getAidato() == 0) {
+			throw new RuntimeException("FIRMALT.aidato not set!");
+		}
+		DateTimeManager dtm = new DateTimeManager();
+		String nowString = dtm.getCurrentDate_ISO();
+		int now = Integer.valueOf(nowString);
+		
+		if (firmalt.getAidato() < now) {
+			return false;
+		} else {
+			return true;
+		}
+
+	}	
 	
 	/*
 	 * Get all attachments in message, e.i. PDF and XML
@@ -219,7 +272,6 @@ public class ActionsServiceManager {
 	private List<PrettyPrintAttachments> getAttachments(MessagesHalRepresentation message, FirmaltDao firmalt) {
 		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
 		String self = message.getLinks().getLinksBy("self").get(0).getHref();
-//		logger.info("self="+self);
 		
 		URI uri = URI.create(self);
 		//Get specific message
@@ -227,7 +279,6 @@ public class ActionsServiceManager {
 		
 		List<Link> attachmentsLink =halMessage.getLinks().getLinksBy("attachment");
 		attachmentsLink.forEach((attLink) -> {
-//			logger.info("attLink="+attLink);
 			URI attUri = URI.create(attLink.getHref());
 			//Prefix Altinn-name with created_date
 			StringBuilder writeFile = new StringBuilder(halMessage.getCreatedDate().toString()).append("-").append(attLink.getName());
