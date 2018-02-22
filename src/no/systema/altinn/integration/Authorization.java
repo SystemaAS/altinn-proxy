@@ -10,10 +10,8 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.List;
 
-import javax.annotation.PostConstruct;
 import javax.net.ssl.SSLContext;
 
-import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -37,24 +35,13 @@ import org.springframework.web.client.RestTemplate;
 
 import no.systema.altinn.entities.ApiKey;
 import no.systema.jservices.common.dao.FirmaltDao;
-import no.systema.jservices.common.dao.services.FirmaltDaoService;
 
 @Service("authorization")
 public class Authorization {
 	private static Logger logger = Logger.getLogger(Authorization.class.getName());
-	private List<FirmaltDao> firmaltDaoList;
-
-	@Autowired
-	private FirmaltDaoService firmaltDaoService;
 	
 	@Autowired
 	private CertificateManager certificateManager;
-	
-    @PostConstruct
-	public void constructor() {
-    	firmaltDaoList = firmaltDaoService.get();
-    	logger.info("Autowired firmaltDaoService, config-data=");firmaltDaoList.forEach(dao -> logger.info(ReflectionToStringBuilder.toString(dao)));
-	}		
 	
 	/**
 	 * Configures ClientHttpRequestFactory to provide client certificate for two way https connection.<br>
@@ -140,7 +127,7 @@ public class Authorization {
 		URI authUri = ActionsUriBuilder.authentication(firmaltDao.getAihost(), firmaltDao.getAiauur());
 		
 		ResponseEntity<byte[]> response = restTemplate.exchange(authUri, HttpMethod.POST, entity, byte[].class);			
-		logger.info("response="+response);
+		logger.debug("response="+response);
 		
 		List<String> setCookieList = response.getHeaders().get(HttpHeaders.SET_COOKIE);
 		String cookie = null;
@@ -181,7 +168,7 @@ public class Authorization {
 		URI authUri = ActionsUriBuilder.authentication(firmaltDao.getAihost(), firmaltDao.getAiauur());
 
 		ResponseEntity<byte[]> response = restTemplate.exchange(authUri, HttpMethod.POST, entity, byte[].class);			
-		logger.info("response="+response);
+		logger.debug("response="+response);
 		
 		List<String> setCookieList = response.getHeaders().get(HttpHeaders.SET_COOKIE);
 		String cookie = null;
@@ -197,14 +184,5 @@ public class Authorization {
 		return entityHeadersOnly;
 
     }
-
-    /**
-     * Get list of FirmaltDao initiated in @PostContruct
-     * 
-     * @return List<FirmaltDao>
-     */
-	public List<FirmaltDao> getFirmaltDaoList() {
-		return firmaltDaoList;
-	}
 
 }

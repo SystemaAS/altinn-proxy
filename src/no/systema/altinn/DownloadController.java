@@ -3,6 +3,10 @@ package no.systema.altinn;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -23,6 +27,7 @@ import no.systema.altinn.entities.PrettyPrintMessages;
 import no.systema.altinn.integration.ActionsServiceManager;
 import no.systema.jservices.common.dao.FirmaltDao;
 import no.systema.jservices.common.dao.services.BridfDaoService;
+import no.systema.jservices.common.util.StringUtils;
 /**
  * This controller is mainly for troubleshooting. <br>
  * 
@@ -43,8 +48,9 @@ public class DownloadController {
 	 * 
 	 * Note: No state-handling of messages in Altinn!
 	 * 
-	 * @Example: http://gw.systema.no:8080/altinn-proxy/downloadDagsobjor.do?user=FREDRIK&forceAll=false
-	 * forceAll=true remove filter on GET attachment.
+	 * @Example: http://gw.systema.no:8080/altinn-proxy/downloadDagsobjor.do?user=FREDRIK&forceAll=false&fraDato=20180101
+	 * forceAll=true , removes date-filter on GET attachment.
+	 * fraDato=set, filter on CreatedDate in www.altin..no, overrides forceAll=true
 	 * 
 	 * @param session
 	 * @param request, user 
@@ -54,6 +60,7 @@ public class DownloadController {
 	@ResponseBody
 	public String download(HttpSession session, HttpServletRequest request) {
 		StringBuilder sb = new StringBuilder();
+		List<PrettyPrintAttachments> dagsoppgors = null;
 
 		logger.info("downloadDagsobjor.do...");
 		try {
@@ -65,12 +72,21 @@ public class DownloadController {
 			
 			//Ignoring date-filter
 			String forceAll = request.getParameter("forceAll");
-			List<PrettyPrintAttachments> dagsoppgors = serviceManager.putDagsobjorAttachmentsToPath(Boolean.valueOf(forceAll));
+			//Filter on date
+			String fraDato = request.getParameter("fraDato");
+			if (StringUtils.hasValue(fraDato)) {
+				dagsoppgors = serviceManager.putDagsobjorAttachmentsToPath(Boolean.valueOf(forceAll),getFromCreatedDate(fraDato));
+				sb.append("Dagsoppgjors-filer i meldinger fra Skattetaen er nedlasted. Med filter på fraDato (CreatedDate i altinn). \n \n");
+			} else {
+				dagsoppgors = serviceManager.putDagsobjorAttachmentsToPath(Boolean.valueOf(forceAll), null);
+				if (StringUtils.hasValue(forceAll) && Boolean.valueOf(forceAll).booleanValue()) {
+					sb.append("Dagsoppgjors-filer i meldinger fra Skattetaen er nedlasted. Uten filter! \n \n");
+				} else {
+					sb.append("Dagsoppgjors-filer i meldinger fra Skattetaen er nedlasted. Fra idag. \n \n");
+				}
+
+			}
 			
-			logger.info("serviceManager.putDagsobjorAttachmentsToPath(boolean forceAll) executed...forceAll="+forceAll);
-
-			sb.append("Dagsoppgjors-filer i meldinger fra Skattetaen er nedlasted. \n \n");
-
 			sb.append("Path till filer finnes i fil:FIRMALT og felt: AIPATH \n \n");
 			
 			sb.append(FlipTableConverters.fromIterable(dagsoppgors, PrettyPrintAttachments.class));
@@ -139,6 +155,17 @@ public class DownloadController {
 		return sb.toString();
 
 	}
+
+	private LocalDateTime getFromCreatedDate(String fraDato) {
+		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd"); //as defined in Firmalt
+		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HHmmss");  //as defined in Firmalt.
+
+		String fraTime = "000000";
+		LocalDate fromDate = LocalDate.parse(fraDato, dateFormatter);
+		LocalTime fromTime = LocalTime.parse(fraTime, timeFormatter);
+		
+		return  LocalDateTime.of(fromDate, fromTime);
+	}	
 	
 	@Autowired
 	private BridfDaoService bridfDaoService;

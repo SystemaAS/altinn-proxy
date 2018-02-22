@@ -2,16 +2,18 @@ package no.systema.altinn.integration;
 
 import static org.junit.Assert.assertNotNull;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,50 +37,12 @@ public class TestJActionsServiceManager {
 	String KIRKENES = "910021451";
 	
 	
-	//@Before
+	@Before
 	public void setUp() throws Exception {
-        AbstractApplicationContext  context = new AnnotationConfigApplicationContext(TestAppConfig.class);
-        serviceManager = (ActionsServiceManager) context.getBean("actionsservicemanager");
-        firmaltDaoService = (FirmaltDaoService) context.getBean("firmaltDaoService");
-        context.close();			
-		
+        ApplicationContext commonContext = new ClassPathXmlApplicationContext("syjservicescommon-data-service-test.xml");
+        firmaltDaoService = (FirmaltDaoService) commonContext.getBean("firmaltDaoService");
 	}
 
-	//Från Erlend
-//	Testorganisasjon: 810514442      BAREKSTAD OG YTTERVÅG REGNSKAP  (systema)
-//
-//	Sertifikatpassord: KRw16s7XVQuyA3ed
-//
-//	Daglig leder: 20015001543           ANTONIO MALIK            
-//
-//	 
-//
-//	Testorganisasjon2: 910021451 KIRKENES OG AUSTBØ (KUNDE)
-//
-//	Daglig leder 2: 06117701547 Rolf Bjørn	
-	
-	//Från Mats
-//	Vedlagt ligger innloggingsinformasjon til Altinn hvor testdata er lagt inn.
-//
-//	 
-//
-//	Fødselsnummer for innlogging:
-//
-//	06117701547
-//
-//	 
-//
-//	Organisasjonsnummer:
-//
-//	910021451
-//
-//	 
-//
-//	Navn på organisasjon:
-//
-//	Kirkenes og Austbø	
-	
-	
 	
 	@Test
 	public final void testGetMessages() {
@@ -117,7 +81,7 @@ public class TestJActionsServiceManager {
 	@Test
 	public final void testGetDagsobjor() {
 		
-		serviceManager.putDagsobjorAttachmentsToPath(false);
+		serviceManager.putDagsobjorAttachmentsToPath(false, null);
 //		result2.forEach((message) ->  System.out.println("message from "+ServiceOwner.Skatteetaten+":"+message));
 		
 	}
@@ -156,9 +120,58 @@ public class TestJActionsServiceManager {
 
 	}
 	
+	@Test
+	public final void testDatoCheck() {
+		List<FirmaltDao> firmaltDaoList = firmaltDaoService.get();
+
+		DateTimeManager dtm = new DateTimeManager();
+		String nowString = dtm.getCurrentDate_ISO();
+		int now = Integer.valueOf(nowString);		
+		
+//		firmaltDaoList.forEach(dao -> System.out.println(ReflectionToStringBuilder.toString(dao)));
+		firmaltDaoList.forEach(dao -> {
+			System.out.println("aidato=" + dao.getAidato());
+			int dager=  now - dao.getAidato();
+			System.out.println("dager=" + dager);
+			
+		});		
+		
+	}	
 	
-	
-	
+	@Test
+	public final void testAidatoToLocalDate() {
+		int aidato = 20180220;
+		int aitid = 103800;
+		String aidatoString = String.valueOf(aidato);
+		String aitidString = String.valueOf(aitid);
+
+		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd"); 
+		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HHmmss");  //as defined in Firmalt.
+
+		LocalDate fromDate = LocalDate.parse(aidatoString, dateFormatter);
+		LocalTime fromTime = LocalTime.parse(aitidString, timeFormatter);
+		
+		System.out.println("aidato"+aidato+", fromDate="+fromDate);
+		LocalDateTime ldt = LocalDateTime.of(fromDate, fromTime);
+		System.out.println("aitid"+aitid+", fromTime="+fromTime);
+
+	}
+
+	@Test
+	public final void testIntDateToLocalDate() {
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+	    String nowString = "20161109";
+	    int now = Integer.valueOf(nowString);
+
+	    LocalDate formatDateTime = LocalDate.parse(nowString, formatter);
+
+	    System.out.println("Before : " + nowString);
+
+	    System.out.println("After : " + formatDateTime);
+
+	    System.out.println("After : " + formatDateTime.format(formatter));
+
+	}	
 	
 	
 	static void printJsonView(List<MessagesHalRepresentation> messages)  {

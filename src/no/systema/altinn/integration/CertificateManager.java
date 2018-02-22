@@ -33,17 +33,17 @@ public class CertificateManager {
 	private File getCertificateFile() throws FileNotFoundException {
 		String folder = CATALINA_HOME + "/espedsg/certificates";
 		File certificateFolder = FileUtils.getFile(folder);
-		logger.info("Certificate folder found="+certificateFolder);
+		logger.debug("Certificate folder found="+certificateFolder);
 		
 		File certificateFile = null;
 		String[] extensions = {"p12"};
 		Collection<File> files = FileUtils.listFiles(certificateFolder, extensions, false);
 		
-		logger.info("files.size with .p12 extensions="+files.size());
+		logger.debug("files.size with .p12 extensions="+files.size());
 		
 		for (Iterator<File> iterator = files.iterator(); iterator.hasNext();) {
 			File file = (File) iterator.next();
-			logger.info("file="+file.getName());
+			logger.debug("file="+file.getName());
 		}		
 		
 		Collection<File> filtered =

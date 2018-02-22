@@ -5,11 +5,14 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -51,6 +54,8 @@ import no.systema.jservices.common.util.DateTimeManager;
 @Service("actionsservicemanager")
 public class ActionsServiceManager {
 	private static Logger logger = Logger.getLogger(ActionsServiceManager.class.getName());
+	DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd"); //as defined in Firmalt
+	DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HHmmss");  //as defined in Firmalt.
 	
 	@Autowired
 	private Authorization authorization;
@@ -75,7 +80,8 @@ public class ActionsServiceManager {
 	 */
 	public List<PrettyPrintMessages> getMessages(boolean forceDetails) {
 		final List<PrettyPrintMessages> result = new ArrayList<PrettyPrintMessages>();
-		authorization.getFirmaltDaoList().forEach(firmalt -> {
+		List<FirmaltDao> firmaltDaoList =firmaltDaoService.get();
+		firmaltDaoList.forEach(firmalt -> {
 			URI uri = ActionsUriBuilder.messages(firmalt.getAihost(), firmalt.getAiorg());
 			if (forceDetails) {
 				List<MessagesHalRepresentation> messages = getMessages(uri, firmalt);
@@ -116,7 +122,8 @@ public class ActionsServiceManager {
 	 */
 	public List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner) {
 		final List<MessagesHalRepresentation> result = new ArrayList<MessagesHalRepresentation>();
-		authorization.getFirmaltDaoList().forEach(firmalt -> {		
+		final List<FirmaltDao> firmaltDaoList =firmaltDaoService.get();
+		firmaltDaoList.forEach(firmalt -> {	
 			URI uri = ActionsUriBuilder.messages(firmalt.getAihost(),  firmalt.getAiorg(),serviceOwner);
 			result.addAll(getMessages(uri,firmalt));
 		});
@@ -144,21 +151,10 @@ public class ActionsServiceManager {
 		
 	}	
 	
-	/**
-	 * Get all message for orgnr and specific {@link ServiceOwner}, {@link ServiceOwner}, {@link ServiceEdition} and yesterday
-	 * 
-	 * @see {@link ActionsUriBuilder}
-	 * @param orgnr
-	 * @param serviceOwner
-	 * @param serviceCode
-	 * @param serviceEdition
-	 * @param date
-	 * @return List<MessagesHalRepresentation>
-	 */
-	private List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDateTime yesterday, FirmaltDao firmalt) {
-		logger.info("About to get message greater than "+yesterday);
+	private List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDateTime createdDate, FirmaltDao firmalt) {
+		logger.info("About to get message greater than "+createdDate+ " for orgnr:"+firmalt.getAiorg());
 		final List<MessagesHalRepresentation> result = new ArrayList<MessagesHalRepresentation>();
-		URI uri = ActionsUriBuilder.messages(firmalt.getAihost(), firmalt.getAiorg(), serviceOwner, serviceCode, serviceEdition, yesterday);
+		URI uri = ActionsUriBuilder.messages(firmalt.getAihost(), firmalt.getAiorg(), serviceOwner, serviceCode, serviceEdition, createdDate);
 		result.addAll(getMessages(uri, firmalt));
 		
 		return result;
@@ -172,12 +168,20 @@ public class ActionsServiceManager {
 	 * @param forceAll removes filter day, convenience for troubleshooting manually, typical use is false.
 	 * @return List of fileNames
 	 */
-	public List<PrettyPrintAttachments> putDagsobjorAttachmentsToPath(boolean forceAll) {
+	public List<PrettyPrintAttachments> putDagsobjorAttachmentsToPath(boolean forceAll, LocalDateTime fraDato) {
 		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
-		authorization.getFirmaltDaoList().forEach(firmalt -> {	
-			if (forceAll) {
-				List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten, ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, firmalt);
-
+		final List<FirmaltDao> firmaltDaoList =firmaltDaoService.get();
+		firmaltDaoList.forEach(firmalt -> {
+			if (fraDato != null || forceAll) {
+				List<MessagesHalRepresentation> dagsobjors = null;
+				if (fraDato != null) {
+					logger.info("Orgnr:"+firmalt.getAiorg()+ ", downloading fraDato-filtered messages from "+fraDato+", from Skatteeten on Dagsoppgjor");
+					logger.info("fraDato="+fraDato);
+					dagsobjors = getMessages(ServiceOwner.Skatteetaten, ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, fraDato, firmalt);
+				} else {  //forceAll
+					logger.info("Orgnr:"+firmalt.getAiorg()+ ", downloading all messages from Skatteeten on Dagsoppgjor");
+					dagsobjors = getMessages(ServiceOwner.Skatteetaten, ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, firmalt);
+				}
 				dagsobjors.forEach((message) -> {
 					logRecords.addAll(getAttachments(message, firmalt));
 				});
@@ -185,15 +189,18 @@ public class ActionsServiceManager {
 				if (!dagsobjors.isEmpty()) {
 					updateDownloadDato(firmalt);
 				}
-				
+				logger.info("Orgnr:"+firmalt.getAiorg()+ ", " +dagsobjors.size()+" dagsoppgjor downloaded, with "+logRecords.size()+" attachments.");
 			} else {
+				logger.info("Orgnr:"+firmalt.getAiorg()+ ", downloading if not downloaded today.");
 				if (!isDownloadedToday(firmalt)) {
-					logRecords.addAll(getDagsoppgjorForToday(firmalt));
+					logRecords.addAll(getDagsoppgjor(firmalt));
 				}
+				logger.info("Orgnr:"+firmalt.getAiorg()+ " with "+logRecords.size()+" attachments.");
+
 			}
 		});
 
-		logger.info("Dagsoppgjors attachments are downloaded.");
+		logger.info("putDagsobjorAttachmentsToPath executed, with forceAll="+forceAll+", fraDato="+fraDato);
 		logger.info(FlipTableConverters.fromIterable(logRecords, PrettyPrintAttachments.class));
 		
 		return logRecords;
@@ -204,14 +211,17 @@ public class ActionsServiceManager {
 	@Scheduled(cron="${altinn.file.download.cron.pattern}")
 	private List<PrettyPrintAttachments> putDagsobjorAttachmentsToPath() {
 		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
-		authorization.getFirmaltDaoList().forEach(firmalt -> {	
+		final List<FirmaltDao> firmaltDaoList =firmaltDaoService.get();
+		firmaltDaoList.forEach(firmalt -> {
+			logger.info("::Scheduled:: :Get messages for orgnnr:"+firmalt.getAiorg());
 			if (!isDownloadedToday(firmalt)) {
-				logRecords.addAll(getDagsoppgjorForToday(firmalt));	
+				logRecords.addAll(getDagsoppgjor(firmalt));	
 
-				logger.info("Scheduled download of Dagsoppgjors attachments is executed.");
+				logger.info("::Scheduled:: download of Dagsoppgjors attachments is executed.");
 				logger.info(FlipTableConverters.fromIterable(logRecords, PrettyPrintAttachments.class));
 			} else {
-				logger.info("Already downloaded today.");
+				logger.info("::Scheduled:: orgnnr:"+firmalt.getAiorg() +" Already downloaded today.");
+				logger.info("::Scheduled::Actual values in FIRMALT="+ReflectionToStringBuilder.toString(firmalt));
 			}
 			
 		});
@@ -220,9 +230,10 @@ public class ActionsServiceManager {
 
 	}	
 	
-	private List<PrettyPrintAttachments> getDagsoppgjorForToday(FirmaltDao firmalt) {
+	private List<PrettyPrintAttachments> getDagsoppgjor(FirmaltDao firmalt) {
 		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
-		List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, LocalDateTime.now().minusDays(1),firmalt);
+		LocalDateTime createdDate = getFromCreatedDate(firmalt);
+		List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, createdDate,firmalt);
 
 		dagsobjors.forEach((message) -> {
 			logRecords.addAll(getAttachments(message, firmalt));
@@ -231,19 +242,41 @@ public class ActionsServiceManager {
 		if (!dagsobjors.isEmpty()) {
 			updateDownloadDato(firmalt);
 		}
+		logger.info("Orgnr:"+firmalt.getAiorg()+ ", " +dagsobjors.size()+" Dagsoppgjor downloaded, with "+logRecords.size()+" attachments.");
 	
 		return logRecords;
 		
 	}
 	
-	
+	private LocalDateTime getFromCreatedDate(FirmaltDao firmalt) {
+		int aidato;
+		String aidatoString;
+		int aitid;
+		String aitidString;
+		if (firmalt.getAidato() == 0) {
+			throw new RuntimeException("FIRMALT.aidato not set!");
+		} else {
+			aidato = firmalt.getAidato();
+			aidatoString = String.valueOf(aidato);
+		}
+		if (firmalt.getAitid() == 0){
+			aitidString = "000000";
+		} else {
+			aitid = firmalt.getAitid();
+			aitidString = String.valueOf(aitid);
+		}
+		LocalDate fromDate = LocalDate.parse(aidatoString, dateFormatter);
+		LocalTime fromTime = LocalTime.parse(aitidString, timeFormatter);
+		
+		return  LocalDateTime.of(fromDate, fromTime);
+
+	}
+		
 	private void updateDownloadDato(FirmaltDao firmalt) {
 		LocalDateTime now = LocalDateTime.now();
-		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd"); //as defined in Firmalt.
 		String nowDate = now.format(dateFormatter);
 		int aidato = Integer.valueOf(nowDate);
 		
-		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HHmmss");  //as defined in Firmalt.
 		String nowTime = now.format(timeFormatter);
 		int aitid = Integer.valueOf(nowTime);		
 		
@@ -258,17 +291,24 @@ public class ActionsServiceManager {
 		if (firmalt.getAidato() == 0) {
 			throw new RuntimeException("FIRMALT.aidato not set!");
 		}
-		DateTimeManager dtm = new DateTimeManager();
-		String nowString = dtm.getCurrentDate_ISO();
-		int now = Integer.valueOf(nowString);
 		
-		if (firmalt.getAidato() < now) {
+		if (firmalt.getAidato() < getNow() ) {
+			logger.info("Files for orgnr:"+firmalt.getAiorg()+" not downloaded today. About to executed download...");
 			return false;
 		} else {
+			logger.info("Files for orgnr:"+firmalt.getAiorg()+" downloaded today.");
 			return true;
 		}
 
 	}	
+	
+	private int getNow() {
+		DateTimeManager dtm = new DateTimeManager();
+		String nowString = dtm.getCurrentDate_ISO();
+		int now = Integer.valueOf(nowString);
+		
+		return now;
+	}
 	
 	/*
 	 * Get all attachments in message, e.i. PDF and XML
@@ -311,7 +351,7 @@ public class ActionsServiceManager {
 				logger.error("Error in getMessage for " + uri);
 				throw new RuntimeException(responseEntity.getStatusCode().toString());
 			}
-			logger.info("responseEntity.getBody"+responseEntity.getBody());
+			logger.debug("responseEntity.getBody"+responseEntity.getBody());
 	
 	        return HalHelper.getMessages(responseEntity.getBody());
 	        
@@ -338,7 +378,7 @@ public class ActionsServiceManager {
 				logger.error("Error in getMessage for " + uri);
 				throw new RuntimeException(responseEntity.getStatusCode().toString());
 			}
-			logger.info("responseEntity.getBody"+responseEntity.getBody());
+			logger.debug("responseEntity.getBody"+responseEntity.getBody());
 	
 	        return HalHelper.getMessage(responseEntity.getBody());
 	        
@@ -358,7 +398,7 @@ public class ActionsServiceManager {
 		ResponseEntity<byte[]> responseEntity = null;
 
 		try {
-			logger.info("getAttachment, uri=" + uri);
+			logger.debug("getAttachment, uri=" + uri);
 
 			responseEntity = restTemplate.exchange(uri.toString(), HttpMethod.GET, entityHeadersOnly, byte[].class, "1");
 

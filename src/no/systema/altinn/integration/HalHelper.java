@@ -10,7 +10,6 @@ import org.apache.log4j.Logger;
 
 import de.otto.edison.hal.HalRepresentation;
 import no.systema.altinn.entities.MessagesHalRepresentation;
-import no.systema.altinn.entities.MetadataHalRepresentation;
 
 /**
  * Helper class for managing Hal stuff.
@@ -20,7 +19,6 @@ import no.systema.altinn.entities.MetadataHalRepresentation;
  *
  */
 public class HalHelper {
-	private static Logger logger = Logger.getLogger(HalHelper.class.getName());
 
 	/**
 	 * Return Hal representations of Messages
@@ -47,7 +45,7 @@ public class HalHelper {
 	 */
 	public static MessagesHalRepresentation getMessage(String body) throws IOException {
         final MessagesHalRepresentation result = parse(body)
-                .as(MessagesHalRepresentation.class);//, withEmbedded("messages", MessagesHalRepresentation.class));
+                .as(MessagesHalRepresentation.class);
         
         return result;
 
