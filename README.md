@@ -13,8 +13,8 @@ For more detailed info, see [usecase](UC.md)
 * Organisation needs to delegate service *RF-1331 Søknad om dagsoppgjør* to a virksomhetsbruker defined by Systema AS, with role:ECKeyRole.
 
 ### Features
-* Read messages from the organisation innbox; filtered on ServiceOwner SKD, ServiceCode 5012, ServiceEdition 171208 and current day. 
-* Download attachment i messages: Automatic once per today (06.00) and/or manually.
+* Read messages from the organisation innbox; filtered on ServiceOwner SKD, ServiceCode 5012, ServiceEdition 171208 and days after [FIRMALT](https://github.com/SystemaAS/syjservicescommon/blob/master/src/main/no/systema/jservices/common/dao/FirmaltDao.java).AIDATO. AIDATO and AITID is updated on downlaod
+* Download attachment i messages: Automatic polling once every hour and checks if messages exist where AIDATO or greater, and/or manually. See [DownloadController](https://github.com/SystemaAS/altinn-proxy/blob/master/src/no/systema/altinn/DownloadController.java)
 
 
 ### Set-up
