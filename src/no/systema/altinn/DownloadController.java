@@ -137,7 +137,7 @@ public class DownloadController {
 			logger.info("serviceManager.getMessages()");
 			logger.info(FlipTableConverters.fromIterable(messages, PrettyPrintMessages.class));
 
-			sb.append("Alle meldinger i innboksen. \n \n");
+			sb.append("Alle meldinger \n \n");
 			
 			sb.append("Meldinger:\n");
 			sb.append(FlipTableConverters.fromIterable(messages, PrettyPrintMessages.class));

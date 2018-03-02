@@ -44,7 +44,6 @@ import no.systema.jservices.common.util.DateTimeManager;
  * 
  * Implementing part of actions found here: https://www.altinn.no/api/Help <br>
  * 
- * This class is assuming that {@linkplain FirmaltDao} is prepared as a List in {@linkplain Authorization} <br>
  * 
  * @author Fredrik Möller
  * @date 2018-01
