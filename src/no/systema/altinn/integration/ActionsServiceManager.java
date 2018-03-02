@@ -251,7 +251,6 @@ public class ActionsServiceManager {
 	private LocalDateTime getFromCreatedDate(FirmaltDao firmalt) {
 		int aidato;
 		String aidatoString;
-		int aitid;
 		String aitidString;
 		if (firmalt.getAidato() == 0) {
 			throw new RuntimeException("FIRMALT.aidato not set!");
@@ -259,12 +258,8 @@ public class ActionsServiceManager {
 			aidato = firmalt.getAidato();
 			aidatoString = String.valueOf(aidato);
 		}
-		if (firmalt.getAitid() == 0){
-			aitidString = "000000";
-		} else {
-			aitid = firmalt.getAitid();
-			aitidString = String.valueOf(aitid);
-		}
+
+		aitidString = String.format("%06d", firmalt.getAitid());  //pad up to 6 char, value can be between e.g. 3 to 122333	eq. 00:00:03 and 12:23:33
 		LocalDate fromDate = LocalDate.parse(aidatoString, dateFormatter);
 		LocalTime fromTime = LocalTime.parse(aitidString, timeFormatter);
 		

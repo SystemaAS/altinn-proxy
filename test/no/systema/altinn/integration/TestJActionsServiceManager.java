@@ -1,6 +1,6 @@
 package no.systema.altinn.integration;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -140,20 +140,25 @@ public class TestJActionsServiceManager {
 	
 	@Test
 	public final void testAidatoToLocalDate() {
-		int aidato = 20180220;
-		int aitid = 103800;
-		String aidatoString = String.valueOf(aidato);
-		String aitidString = String.valueOf(aitid);
-
 		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd"); 
 		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HHmmss");  //as defined in Firmalt.
+	
+		int aidato = 20180220;
+		int aitid = 3;
+		String aidatoString = String.valueOf(aidato);
+		
+		String padded = String.format("%06d", aitid);		
+		
+		assertTrue("Should be padded.",padded.length() == 6);
+
 
 		LocalDate fromDate = LocalDate.parse(aidatoString, dateFormatter);
-		LocalTime fromTime = LocalTime.parse(aitidString, timeFormatter);
+		LocalTime fromTime = LocalTime.parse(padded, timeFormatter);
 		
 		System.out.println("aidato"+aidato+", fromDate="+fromDate);
 		LocalDateTime ldt = LocalDateTime.of(fromDate, fromTime);
-		System.out.println("aitid"+aitid+", fromTime="+fromTime);
+		System.out.println("padded"+padded+", fromTime="+fromTime);
+
 
 	}
 
