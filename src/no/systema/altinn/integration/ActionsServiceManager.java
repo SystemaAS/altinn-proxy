@@ -29,6 +29,7 @@ import com.jakewharton.fliptables.FlipTableConverters;
 
 import de.otto.edison.hal.Link;
 import no.systema.altinn.entities.ApiKey;
+import no.systema.altinn.entities.AttachmentHalRepresentation;
 import no.systema.altinn.entities.MessagesHalRepresentation;
 import no.systema.altinn.entities.PrettyPrintAttachments;
 import no.systema.altinn.entities.PrettyPrintMessages;
@@ -177,10 +178,35 @@ public class ActionsServiceManager {
 					logger.info("Orgnr:"+firmalt.getAiorg()+ ", downloading fraDato-filtered messages from "+fraDato+", from Skatteeten on Dagsoppgjor");
 					logger.info("fraDato="+fraDato);
 					dagsobjors = getMessages(ServiceOwner.Skatteetaten, ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, fraDato, firmalt);
+
+					/** 2018_03-02
+					 * Det har også blitt oppdaget en feil i oppsettet for enkelttjeneste for den nye ordningen for dagsoppgjør. Denne feilen berører kun de som ønsker å tildele enkeltpersoner enkelttjenester i Altinn. 
+					* For å løse dette søk opp 4125/150602 "Brev til etterskuddspliktige" og velg denne. I tillegg er det laget en ny enkelttjeneste som er riktig 5012/171208 "Elektronisk kontoutskrift tollkreditt og dagsoppgjør" som vil være gyldig i løpet av 3-4 uker. Tildel denne samtidig og den vil automatisk bli tatt i bruk når den nye tjenesten er klar.
+					* Har en rolle som "Regnskapsmedarbeider" vil en uansett ha tilgang til å laste ned PDF- og e2b-fil fra Altinn og vil ikke bli berørt av endringen.
+					 */
+					//TODO: To be removed when 5012/171208 is working. Planned to work  2018-03/2018-04
+					List<MessagesHalRepresentation> dagsobjorsFIX = getMessages(ServiceOwner.Skatteetaten,ServiceCode.DagsobjorFIX, ServiceEdition.DagsobjorFIX, fraDato,firmalt);
+					logger.info(dagsobjorsFIX.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.DagsobjorFIX.getCode()+", ServiceEdition="+ServiceEdition.DagsobjorFIX.getCode());
+					dagsobjors.addAll(dagsobjorsFIX);					
+					
+				
 				} else {  //forceAll
 					logger.info("Orgnr:"+firmalt.getAiorg()+ ", downloading all messages from Skatteeten on Dagsoppgjor");
 					dagsobjors = getMessages(ServiceOwner.Skatteetaten, ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, firmalt);
+
+					/** 2018_03-02
+					 * Det har også blitt oppdaget en feil i oppsettet for enkelttjeneste for den nye ordningen for dagsoppgjør. Denne feilen berører kun de som ønsker å tildele enkeltpersoner enkelttjenester i Altinn. 
+					* For å løse dette søk opp 4125/150602 "Brev til etterskuddspliktige" og velg denne. I tillegg er det laget en ny enkelttjeneste som er riktig 5012/171208 "Elektronisk kontoutskrift tollkreditt og dagsoppgjør" som vil være gyldig i løpet av 3-4 uker. Tildel denne samtidig og den vil automatisk bli tatt i bruk når den nye tjenesten er klar.
+					* Har en rolle som "Regnskapsmedarbeider" vil en uansett ha tilgang til å laste ned PDF- og e2b-fil fra Altinn og vil ikke bli berørt av endringen.
+					 */
+					//TODO: To be removed when 5012/171208 is working. Planned to work  2018-03/2018-04
+					List<MessagesHalRepresentation> dagsobjorsFIX = getMessages(ServiceOwner.Skatteetaten,ServiceCode.DagsobjorFIX, ServiceEdition.DagsobjorFIX, firmalt);
+					logger.info(dagsobjorsFIX.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.DagsobjorFIX.getCode()+", ServiceEdition="+ServiceEdition.DagsobjorFIX.getCode());
+					dagsobjors.addAll(dagsobjorsFIX);						
+				
 				}
+
+				
 				dagsobjors.forEach((message) -> {
 					logRecords.addAll(getAttachments(message, firmalt));
 				});
@@ -326,10 +352,28 @@ public class ActionsServiceManager {
 		MessagesHalRepresentation halMessage = getMessage(uri, firmalt);
 		
 		List<Link> attachmentsLink =halMessage.getLinks().getLinksBy("attachment");
+		
 		attachmentsLink.forEach((attLink) -> {
+			logger.debug("attLink="+attLink);
+			logger.debug("attLink, rtsb.toString="+ReflectionToStringBuilder.toString(attLink));
+
 			URI attUri = URI.create(attLink.getHref());
+
+//			AttachmentHalRepresentation attHalRep = getAttachmentHalRepresentation(attUri, firmalt);	
+//			logger.debug("attHalRep="+attHalRep);
+//			logger.debug("attHalRep rtsb.tos="+ReflectionToStringBuilder.toString(attHalRep));
+
 			//Prefix Altinn-name with created_date
-			StringBuilder writeFile = new StringBuilder(halMessage.getCreatedDate().toString()).append("-").append(attLink.getName());
+			StringBuilder writeFile;
+			if (attLink.getName().endsWith(".pdf") || attLink.getName().endsWith(".xml")) { 
+				writeFile = new StringBuilder(halMessage.getCreatedDate().toString()).append("-").append(attLink.getName());
+			} else {
+				if (attLink.getName().startsWith("Et"))  {
+					writeFile = new StringBuilder(halMessage.getCreatedDate().toString()).append("-").append(attLink.getName()).append(".xml");
+				} else {
+					writeFile = new StringBuilder(halMessage.getCreatedDate().toString()).append("-").append(attLink.getName()).append(".pdf");
+				}
+			}
 			getAttachment(attUri, writeFile.toString(), firmalt);
 			PrettyPrintAttachments log = new PrettyPrintAttachments(firmalt.getAiorg(), LocalDateTime.now().toString(),halMessage.getCreatedDate().toString(), writeFile.toString(), halMessage.getServiceOwner() );
 			logRecords.add(log);
@@ -410,7 +454,7 @@ public class ActionsServiceManager {
 				logger.error("Error in getAttachment for " + uri);
 				throw new RuntimeException(responseEntity.getStatusCode().toString());
 			} else {
-
+				logger.debug("getAttachment::responseEntity.getBody"+responseEntity.getBody());
 				writeToFile(writeFile, responseEntity, firmaltDao);
 
 			}
@@ -423,6 +467,35 @@ public class ActionsServiceManager {
 
 	}
 
+	private AttachmentHalRepresentation getAttachmentHalRepresentation(URI uri,  FirmaltDao firmaltDao) {
+//		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntity(firmaltDao);
+		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntityFileDownload(firmaltDao);	
+		ResponseEntity<byte[]> responseEntity = null;
+		
+		try {
+
+//			responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entityHeadersOnly, String.class); 
+			responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entityHeadersOnly, byte[].class); 
+			
+			if (responseEntity.getStatusCode() != HttpStatus.OK) {
+				logger.error("Error in getMessage for " + uri);
+				throw new RuntimeException(responseEntity.getStatusCode().toString());
+			}
+			logger.debug("getAttachmentHalRepresentation: responseEntity.getBody"+responseEntity.getBody().toString());
+	
+//	        return HalHelper.getAttachment(responseEntity.getBody());
+			logger.info("Returning null");
+			return null;
+			
+	        
+		} catch (Exception e) {
+			String errMessage = String.format(" request failed: %s", e.getLocalizedMessage());
+			logger.warn(errMessage, e);
+			throw new RuntimeException(errMessage);
+		}
+	}	
+	
+	
 	/*
 	 * For test
 	 * FileOutputStream fos = new FileOutputStream("/usr/local/Cellar/tomcat/8.0.33/libexec/webapps/altinn-proxy/WEB-INF/resources/files/" + writeFile);

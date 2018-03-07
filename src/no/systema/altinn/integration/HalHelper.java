@@ -6,9 +6,8 @@ import static de.otto.edison.hal.HalParser.parse;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.log4j.Logger;
-
 import de.otto.edison.hal.HalRepresentation;
+import no.systema.altinn.entities.AttachmentHalRepresentation;
 import no.systema.altinn.entities.MessagesHalRepresentation;
 
 /**
@@ -40,7 +39,7 @@ public class HalHelper {
 	 * Return Hal representations of Message
 	 * 
 	 * @param body
-	 * @return List<MessagesHalRepresentation>  messages
+	 * @return MessagesHalRepresentation  messages
 	 * @throws IOException
 	 */
 	public static MessagesHalRepresentation getMessage(String body) throws IOException {
@@ -51,4 +50,21 @@ public class HalHelper {
 
 	}	
 
+	/**
+	 * Return Hal representations of Attachment
+	 * 
+	 * @param body
+	 * @return AttachmentHalRepresentation  messages
+	 * @throws IOException
+	 */
+	public static AttachmentHalRepresentation getAttachment(String body) throws IOException {
+        final AttachmentHalRepresentation result = parse(body)
+                .as(AttachmentHalRepresentation.class);
+        
+        return result;
+
+	}		
+	
+	
+	
 }
