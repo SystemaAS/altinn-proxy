@@ -354,8 +354,8 @@ public class ActionsServiceManager {
 		List<Link> attachmentsLink =halMessage.getLinks().getLinksBy("attachment");
 		
 		attachmentsLink.forEach((attLink) -> {
-			logger.debug("attLink="+attLink);
-			logger.debug("attLink, rtsb.toString="+ReflectionToStringBuilder.toString(attLink));
+//			logger.debug("attLink="+attLink);
+//			logger.debug("attLink, rtsb.toString="+ReflectionToStringBuilder.toString(attLink));
 
 			URI attUri = URI.create(attLink.getHref());
 
@@ -368,6 +368,9 @@ public class ActionsServiceManager {
 			if (attLink.getName().endsWith(".pdf") || attLink.getName().endsWith(".xml")) { 
 				writeFile = new StringBuilder(halMessage.getCreatedDate().toString()).append("-").append(attLink.getName());
 			} else {
+				/*2018-03: Could be lead to problem in future if xml name is changed.
+				 * be aware....
+				 */
 				if (attLink.getName().startsWith("Et"))  {
 					writeFile = new StringBuilder(halMessage.getCreatedDate().toString()).append("-").append(attLink.getName()).append(".xml");
 				} else {
@@ -468,20 +471,21 @@ public class ActionsServiceManager {
 	}
 
 	private AttachmentHalRepresentation getAttachmentHalRepresentation(URI uri,  FirmaltDao firmaltDao) {
-//		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntity(firmaltDao);
-		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntityFileDownload(firmaltDao);	
-		ResponseEntity<byte[]> responseEntity = null;
+		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntity(firmaltDao);
+//		HttpEntity<ApiKey> entityHeadersOnly = authorization.getHttpEntityFileDownload(firmaltDao);	
+//		ResponseEntity<byte[]> responseEntity = null;
+		ResponseEntity<String> responseEntity = null;
 		
 		try {
 
-//			responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entityHeadersOnly, String.class); 
-			responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entityHeadersOnly, byte[].class); 
+			responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entityHeadersOnly, String.class); 
+//			responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entityHeadersOnly, byte[].class); 
 			
 			if (responseEntity.getStatusCode() != HttpStatus.OK) {
 				logger.error("Error in getMessage for " + uri);
 				throw new RuntimeException(responseEntity.getStatusCode().toString());
 			}
-			logger.debug("getAttachmentHalRepresentation: responseEntity.getBody"+responseEntity.getBody().toString());
+			logger.debug("getAttachmentHalRepresentation(String.class): responseEntity.getBody.toString"+responseEntity.getBody().toString());
 	
 //	        return HalHelper.getAttachment(responseEntity.getBody());
 			logger.info("Returning null");

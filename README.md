@@ -24,4 +24,30 @@ For more info, see [usecase](UC.md)
 * Make sure approriate rights are delegate from within www.altinn.se 
 * See [DownloadController](https://github.com/SystemaAS/altinn-proxy/blob/master/src/no/systema/altinn/DownloadController.java) for verifying read in organisations inbox.
 
+### Issues
+* <dl>
+  <dt>2018-03: To retrieve correct service, Skattetaten has a workaround, using different [ServiceCode](https://github.com/SystemaAS/altinn-proxy/blob/master/src/no/systema/altinn/entities/ServiceCode.java) and [ServiceEdition](https://github.com/SystemaAS/altinn-proxy/blob/master/src/no/systema/altinn/entities/ServiceEdition.java) than upfront specified.</dt>
+</dl> 
 
+* <dl>  
+  <dt>2018-03: The Attachment object is a bit vague. In the HAL-link; attachment, the element _name_ can be used arbitrary. Now it includes filename without extensions. </dt>
+  <dd>See [ActionsServiceManager](https://github.com/SystemaAS/altinn-proxy/blob/master/src/no/systema/altinn/integration/ActionsServiceManager.java) for workaround. </dd>
+
+			```if (attLink.getName().endsWith(".pdf") || attLink.getName().endsWith(".xml")) { 
+				writeFile = new StringBuilder(halMessage.getCreatedDate().toString()).append("-").append(attLink.getName());
+			} else {
+				if (attLink.getName().startsWith("Et"))  {
+					writeFile = new StringBuilder(halMessage.getCreatedDate().toString()).append("-").append(attLink.getName()).append(".xml");
+				} else {
+					writeFile = new StringBuilder(halMessage.getCreatedDate().toString()).append("-").append(attLink.getName()).append(".pdf");
+				}
+			}  
+  			```
+ 
+</dl>   
+  
+
+
+   
+   
+</dl>

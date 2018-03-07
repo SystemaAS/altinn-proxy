@@ -1,6 +1,7 @@
 package no.systema.altinn.integration;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -11,9 +12,14 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,20 +33,37 @@ import no.systema.jservices.common.dao.FirmaltDao;
 import no.systema.jservices.common.dao.services.FirmaltDaoService;
 import no.systema.jservices.common.util.DateTimeManager;
 
+//TODO dependency injection funkar inte
 @PropertySource(value = { "classpath:application-test.properties" })
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(classes = {TestAppConfig.class})
 public class TestJActionsServiceManager {
 
-	ActionsServiceManager serviceManager = null;
+//	ActionsServiceManager serviceManager = null;
 	FirmaltDaoService firmaltDaoService = null;
 	
 	String BAREKSTAD = "810514442";
 	String KIRKENES = "910021451";
 	
+//	   @Autowired
+//	    public void setProductService(ActionsServiceManager serviceManager) {
+//	        this.serviceManager = serviceManager;
+//	    }
+	
+    @Autowired
+	FirmaltDaoService fs;
+	
+	
+    @Autowired
+    @Qualifier("actionsServiceManager")
+	ActionsServiceManager serviceManager;
 	
 	@Before
 	public void setUp() throws Exception {
         ApplicationContext commonContext = new ClassPathXmlApplicationContext("syjservicescommon-data-service-test.xml");
         firmaltDaoService = (FirmaltDaoService) commonContext.getBean("firmaltDaoService");
+//        serviceManager = new ActionsServiceManager();
+//        serviceManager.setFirmaltDaoService(firmaltDaoService);
 	}
 
 	
