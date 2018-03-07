@@ -10,7 +10,7 @@ For more info, see [usecase](UC.md)
 
 
 ### Prerequisites
-* Organisation needs to delegate service *RF-1331 Søknad om dagsoppgjør* to a virksomhetsbruker defined by Systema AS, with role:ECKeyRole.
+* Organisation needs to delegate service *5012/171208 "Elektronisk kontoutskrift tollkreditt og dagsoppgjør"* to a virksomhetsbruker defined by Systema AS, with role:ECKeyRole.
 
 ### Features
 * Read messages from the organisations inbox; filtered on ServiceOwner SKD, ServiceCode 5012, ServiceEdition 171208 and days after [FIRMALT](https://github.com/SystemaAS/syjservicescommon/blob/master/src/main/no/systema/jservices/common/dao/FirmaltDao.java).AIDATO. AIDATO and AITID is updated on download.
