@@ -7,7 +7,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -200,6 +203,16 @@ public class TestJActionsServiceManager {
 	    System.out.println("After : " + formatDateTime.format(formatter));
 
 	}	
+	
+	@Test
+	public final void findInList() {
+		final List<String> DHL_ORGNR = Arrays.asList("936972403", "972871400", "971959266", "972211222");
+		String orgnr = "123";
+		Predicate<String> filterPredicate = e -> e == orgnr;
+		Consumer<String> printConsumer = e -> System.out.println("e=" + e);
+		DHL_ORGNR.stream().filter(filterPredicate).forEach(printConsumer);
+
+	}
 	
 	
 	static void printJsonView(List<MessagesHalRepresentation> messages)  {

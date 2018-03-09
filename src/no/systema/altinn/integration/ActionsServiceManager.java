@@ -4,6 +4,8 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.URI;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,11 +17,12 @@ import java.util.List;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -63,13 +66,43 @@ public class ActionsServiceManager {
 	@Autowired
 	private FirmaltDaoService firmaltDaoService;
 
-	@Bean
-	public RestTemplate restTemplate() {
-		return new RestTemplate();
-	}	
+	@Value("${altinn.access.use.proxy}")
+    String useProxy;	
 	
-	@Autowired
-	private RestTemplate restTemplate;
+    @Value("${altinn.access.proxy.host}")
+    String proxyHost;
+
+    @Value("${altinn.access.proxy.port}")
+    String port;	
+	
+	private RestTemplate restTemplate() {
+		SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+
+		logger.info("useProxy="+useProxy);
+		logger.debug("proxyHost="+proxyHost+", port="+port);
+		
+		if (Boolean.valueOf(useProxy)) {
+	        int portNr = -1;
+	        try {
+	            portNr = Integer.parseInt(port);
+	        } catch (NumberFormatException e) {
+	            logger.error("Unable to parse the proxy port number");
+	            throw new RuntimeException("Unable to parse the proxy port number", e);
+	        }
+
+	        InetSocketAddress address = new InetSocketAddress(proxyHost,portNr);
+	        Proxy proxy = new Proxy(Proxy.Type.HTTP,address);
+	        requestFactory.setProxy(proxy);			
+			
+	    	logger.debug("Proxy set to: "+ proxyHost + ":"+portNr);	
+		} else {
+    		requestFactory.setProxy(Proxy.NO_PROXY);	  
+    		logger.debug("NO_PROXY set. ");			
+		}
+	    
+	    return new RestTemplate(requestFactory);		
+		
+	}	
 	
 	/**
 	 * Get all messages for orgnr
@@ -354,15 +387,7 @@ public class ActionsServiceManager {
 		List<Link> attachmentsLink =halMessage.getLinks().getLinksBy("attachment");
 		
 		attachmentsLink.forEach((attLink) -> {
-//			logger.debug("attLink="+attLink);
-//			logger.debug("attLink, rtsb.toString="+ReflectionToStringBuilder.toString(attLink));
-
 			URI attUri = URI.create(attLink.getHref());
-
-//			AttachmentHalRepresentation attHalRep = getAttachmentHalRepresentation(attUri, firmalt);	
-//			logger.debug("attHalRep="+attHalRep);
-//			logger.debug("attHalRep rtsb.tos="+ReflectionToStringBuilder.toString(attHalRep));
-
 			//Prefix Altinn-name with created_date
 			StringBuilder writeFile;
 			if (attLink.getName().endsWith(".pdf") || attLink.getName().endsWith(".xml")) { 
@@ -396,7 +421,8 @@ public class ActionsServiceManager {
 		
 		try {
 
-			responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entityHeadersOnly, String.class); 
+//			responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entityHeadersOnly, String.class); 
+			responseEntity = restTemplate().exchange(uri, HttpMethod.GET, entityHeadersOnly, String.class); 
 
 			if (responseEntity.getStatusCode() != HttpStatus.OK) {
 				logger.error("Error in getMessage for " + uri);
@@ -423,7 +449,8 @@ public class ActionsServiceManager {
 		
 		try {
 
-			responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entityHeadersOnly, String.class); 
+//			responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entityHeadersOnly, String.class); 
+			responseEntity = restTemplate().exchange(uri, HttpMethod.GET, entityHeadersOnly, String.class); 
 
 			if (responseEntity.getStatusCode() != HttpStatus.OK) {
 				logger.error("Error in getMessage for " + uri);
@@ -451,7 +478,8 @@ public class ActionsServiceManager {
 		try {
 			logger.debug("getAttachment, uri=" + uri);
 
-			responseEntity = restTemplate.exchange(uri.toString(), HttpMethod.GET, entityHeadersOnly, byte[].class, "1");
+//			responseEntity = restTemplate.exchange(uri.toString(), HttpMethod.GET, entityHeadersOnly, byte[].class, "1");
+			responseEntity = restTemplate().exchange(uri.toString(), HttpMethod.GET, entityHeadersOnly, byte[].class, "1");
 
 			if (responseEntity.getStatusCode() != HttpStatus.OK) {
 				logger.error("Error in getAttachment for " + uri);
@@ -478,8 +506,7 @@ public class ActionsServiceManager {
 		
 		try {
 
-			responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entityHeadersOnly, String.class); 
-//			responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entityHeadersOnly, byte[].class); 
+			responseEntity = restTemplate().exchange(uri, HttpMethod.GET, entityHeadersOnly, String.class); 
 			
 			if (responseEntity.getStatusCode() != HttpStatus.OK) {
 				logger.error("Error in getMessage for " + uri);

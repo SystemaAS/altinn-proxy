@@ -12,6 +12,7 @@ import java.util.List;
 
 import javax.net.ssl.SSLContext;
 
+import org.apache.http.HttpHost;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -20,6 +21,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -42,6 +44,15 @@ public class Authorization {
 	
 	@Autowired
 	private CertificateManager certificateManager;
+
+    @Value("${altinn.access.use.proxy}")
+    boolean useProxy;	
+	
+    @Value("${altinn.access.proxy.host}")
+    String proxyHost;
+
+    @Value("${altinn.access.proxy.port}")
+    String port;		
 	
 	/**
 	 * Configures ClientHttpRequestFactory to provide client certificate for two way https connection.<br>
@@ -50,13 +61,14 @@ public class Authorization {
 	 * @param firmaltDao
 	 * @return the ClientHttpRequestFactory with configured SSLContext
 	 */
-	public ClientHttpRequestFactory getRequestFactory(FirmaltDao firmaltDao) { 
+	private ClientHttpRequestFactory getRequestFactory(FirmaltDao firmaltDao) { 
 		String[] TLS_PROTOCOLS = {"TLSv1", "TLSv1.1" /*, "TLSv1.2"*/}; // Comment in TLSv1.2 to fail : bug in altinn or java that fails TLS handshake most of the time, but not always
 		String[] CIPHER_SUITES = null; // {"TLS_RSA_WITH_AES_128_GCM_SHA256"};
 
 		char[] password = firmaltDao.getAipwd().toCharArray();
 
 		HttpComponentsClientHttpRequestFactory requestFactory;
+		HttpClient httpClient;
 		
 		try {
 			KeyStore keyStore = KeyStore.getInstance("PKCS12");
@@ -87,11 +99,34 @@ public class Authorization {
 			SSLConnectionSocketFactory sslSocketFactory = new SSLConnectionSocketFactory(sslContext, TLS_PROTOCOLS, CIPHER_SUITES,
 					new DefaultHostnameVerifier());
 
-			HttpClient httpClient = HttpClients.custom()
+			requestFactory = new HttpComponentsClientHttpRequestFactory();
+
+			logger.info("useProxy="+useProxy);
+			logger.debug("proxyHost="+proxyHost+", port="+port);
+			
+			if (Boolean.valueOf(useProxy)) {
+		        int portNr = -1;
+		        try {
+		            portNr = Integer.parseInt(port);
+		        } catch (NumberFormatException e) {
+		            logger.error("Unable to parse the proxy port number");
+		            throw new RuntimeException("Unable to parse the proxy port number", e);
+		        }
+
+				httpClient = HttpClients.custom()
+						.setSSLSocketFactory(sslSocketFactory)
+						.setProxy(new HttpHost(proxyHost, portNr, "http"))
+						.build();	
+				
+				logger.debug("Proxy set to: "+ proxyHost + ":"+portNr);
+			} else {
+				httpClient = HttpClients.custom()
 					.setSSLSocketFactory(sslSocketFactory)
 					.build();
-
-			requestFactory = new HttpComponentsClientHttpRequestFactory();
+				
+	    		logger.debug("No proxy set. ");		
+			}			
+			
 			requestFactory.setHttpClient(httpClient);
 			
 		} catch (KeyManagementException | UnrecoverableKeyException | KeyStoreException | NoSuchAlgorithmException | CertificateException | IOException e) {
