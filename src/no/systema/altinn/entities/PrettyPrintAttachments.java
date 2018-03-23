@@ -14,15 +14,17 @@ public class PrettyPrintAttachments {
 	private String skapetDato;
 	private String filNavn;
 	private String serviceEier;
+	private String status;
 
-	public PrettyPrintAttachments(String orgnr, String nedlastingsDato, String skapetDato, String filNavn, String serviceEier) {
+	public PrettyPrintAttachments(String orgnr, String nedlastingsDato, String skapetDato, String filNavn, String serviceEier, String status) {
 		this.orgnr = orgnr;
 		this.nedlastingsDato = nedlastingsDato;
 		this.skapetDato = skapetDato;
 		this.filNavn = filNavn;
 		this.serviceEier = serviceEier;
+		this.status = status;
 	}
-	
+
 	public String getOrgnr() {
 		return orgnr;
 	}
@@ -52,6 +54,16 @@ public class PrettyPrintAttachments {
 	}
 	public void setServiceEier(String serviceEier) {
 		this.serviceEier = serviceEier;
+	}
+
+
+	public String getStatus() {
+		return status;
+	}
+
+
+	public void setStatus(String status) {
+		this.status = status;
 	}
 
 	

@@ -39,6 +39,7 @@ import no.systema.altinn.entities.PrettyPrintMessages;
 import no.systema.altinn.entities.ServiceCode;
 import no.systema.altinn.entities.ServiceEdition;
 import no.systema.altinn.entities.ServiceOwner;
+import no.systema.altinn.entities.Status;
 import no.systema.jservices.common.dao.FirmaltDao;
 import no.systema.jservices.common.dao.services.FirmaltDaoService;
 import no.systema.jservices.common.util.DateTimeManager;
@@ -123,7 +124,7 @@ public class ActionsServiceManager {
 					String self = message.getLinks().getLinksBy("self").get(0).getHref();
 					MessagesHalRepresentation halMessage = getMessage(URI.create(self),firmalt);
 					PrettyPrintMessages log = new PrettyPrintMessages(firmalt.getAiorg(), LocalDateTime.now().toString(),halMessage.getCreatedDate().toString(), 
-							halMessage.getSubject(), halMessage.getServiceOwner(), halMessage.getServiceCode(), halMessage.getServiceEdition() );
+							halMessage.getSubject(), halMessage.getServiceOwner(), halMessage.getServiceCode(), halMessage.getServiceEdition(), halMessage.getStatus() );
 
 					result.add(log);
 				});
@@ -133,7 +134,7 @@ public class ActionsServiceManager {
 
 				messages.forEach((message) -> {
 					PrettyPrintMessages log = new PrettyPrintMessages(firmalt.getAiorg(), LocalDateTime.now().toString(),message.getCreatedDate().toString(), 
-							message.getSubject(), message.getServiceOwner(), message.getServiceCode(), message.getServiceEdition() );
+							message.getSubject(), message.getServiceOwner(), message.getServiceCode(), message.getServiceEdition(), message.getStatus()  );
 
 					result.add(log);
 				});				
@@ -175,7 +176,7 @@ public class ActionsServiceManager {
 	 * @param serviceEdition
 	 * @return List<MessagesHalRepresentation>
 	 */
-	public List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, FirmaltDao firmalt) {
+	private List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, FirmaltDao firmalt) {
 		final List<MessagesHalRepresentation> result = new ArrayList<MessagesHalRepresentation>();
 		URI uri = ActionsUriBuilder.messages(firmalt.getAihost(),  firmalt.getAiorg(),serviceOwner,serviceCode, serviceEdition);
 		result.addAll(getMessages(uri,firmalt));
@@ -183,22 +184,41 @@ public class ActionsServiceManager {
 		return result;
 		
 	}	
-	
+	/*
+	 * Adding CreatedDate to Odata-filter.
+	 */
 	private List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDateTime createdDate, FirmaltDao firmalt) {
 		logger.info("About to get message greater than "+createdDate+ " for orgnr:"+firmalt.getAiorg());
 		final List<MessagesHalRepresentation> result = new ArrayList<MessagesHalRepresentation>();
 		URI uri = ActionsUriBuilder.messages(firmalt.getAihost(), firmalt.getAiorg(), serviceOwner, serviceCode, serviceEdition, createdDate);
+
 		result.addAll(getMessages(uri, firmalt));
 		
 		return result;
 	
-	}	
+	}
+	/*
+	 * Exclude messages, typically with Status "Ulest".
+	 */
+	private List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDateTime createdDate, FirmaltDao firmalt, Status status) {
+		logger.info("About to get message greater than "+createdDate+ " for orgnr:"+firmalt.getAiorg()+ ", and status:"+status.getCode());
+		final List<MessagesHalRepresentation> result = new ArrayList<MessagesHalRepresentation>();
+		URI uri = ActionsUriBuilder.messages(firmalt.getAihost(), firmalt.getAiorg(), serviceOwner, serviceCode, serviceEdition, createdDate, status);
+
+		result.addAll(getMessages(uri, firmalt));
+		
+		return result;
+	
+	}		
+	
 	
 	/**
-	 * Retrieves all attachment in Melding: Dagsoppgjor, for today <br>
-	 * and stores as defined in {@linkplain FirmaltDao}.aipath
+	 * Retrieves all attachment for ServiceOwner.Skatteetaten, ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, for today and stores as defined in {@linkplain FirmaltDao}.aipath
+	 * 
+	 * Note: this is not using Status-filter.
 	 * 
 	 * @param forceAll removes filter day, convenience for troubleshooting manually, typical use is false.
+	 * @param fraDato - the CreatedDate in www.altinn.no
 	 * @return List of fileNames
 	 */
 	public List<PrettyPrintAttachments> putDagsobjorAttachmentsToPath(boolean forceAll, LocalDateTime fraDato) {
@@ -291,16 +311,16 @@ public class ActionsServiceManager {
 	private List<PrettyPrintAttachments> getDagsoppgjor(FirmaltDao firmalt) {
 		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
 		LocalDateTime createdDate = getFromCreatedDate(firmalt);
-		List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, createdDate,firmalt);
-		logger.info(dagsobjors.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.Dagsobjor.getCode()+", ServiceEdition="+ServiceEdition.Dagsobjor.getCode());
+		List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, createdDate,firmalt, Status.Ulest);
+		logger.info("On createdDate="+createdDate +", " + dagsobjors.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.Dagsobjor.getCode()+", ServiceEdition="+ServiceEdition.Dagsobjor.getCode()+", Status="+Status.Ulest.getCode() );
 		/** 2018_03-02
 		 * Det har også blitt oppdaget en feil i oppsettet for enkelttjeneste for den nye ordningen for dagsoppgjør. Denne feilen berører kun de som ønsker å tildele enkeltpersoner enkelttjenester i Altinn. 
 		* For å løse dette søk opp 4125/150602 "Brev til etterskuddspliktige" og velg denne. I tillegg er det laget en ny enkelttjeneste som er riktig 5012/171208 "Elektronisk kontoutskrift tollkreditt og dagsoppgjør" som vil være gyldig i løpet av 3-4 uker. Tildel denne samtidig og den vil automatisk bli tatt i bruk når den nye tjenesten er klar.
 		* Har en rolle som "Regnskapsmedarbeider" vil en uansett ha tilgang til å laste ned PDF- og e2b-fil fra Altinn og vil ikke bli berørt av endringen.
 		 */
 		//TODO: To be removed when 5012/171208 is working. Planned to work  2018-03/2018-04
-		List<MessagesHalRepresentation> dagsobjorsFIX = getMessages(ServiceOwner.Skatteetaten,ServiceCode.DagsobjorFIX, ServiceEdition.DagsobjorFIX, createdDate,firmalt);
-		logger.info(dagsobjorsFIX.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.DagsobjorFIX.getCode()+", ServiceEdition="+ServiceEdition.DagsobjorFIX.getCode());
+		List<MessagesHalRepresentation> dagsobjorsFIX = getMessages(ServiceOwner.Skatteetaten,ServiceCode.DagsobjorFIX, ServiceEdition.DagsobjorFIX, createdDate,firmalt, Status.Ulest);
+		logger.info("On createdDate="+createdDate +", " + dagsobjorsFIX.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.DagsobjorFIX.getCode()+", ServiceEdition="+ServiceEdition.DagsobjorFIX.getCode()+", Status="+Status.Ulest.getCode() );
 		dagsobjors.addAll(dagsobjorsFIX);
 		
 		dagsobjors.forEach((message) -> {
@@ -403,7 +423,7 @@ public class ActionsServiceManager {
 				}
 			}
 			getAttachment(attUri, writeFile.toString(), firmalt);
-			PrettyPrintAttachments log = new PrettyPrintAttachments(firmalt.getAiorg(), LocalDateTime.now().toString(),halMessage.getCreatedDate().toString(), writeFile.toString(), halMessage.getServiceOwner() );
+			PrettyPrintAttachments log = new PrettyPrintAttachments(firmalt.getAiorg(), LocalDateTime.now().toString(),halMessage.getCreatedDate().toString(), writeFile.toString(), halMessage.getServiceOwner(), halMessage.getStatus() );
 			logRecords.add(log);
 			
 		});
@@ -428,7 +448,7 @@ public class ActionsServiceManager {
 				logger.error("Error in getMessage for " + uri);
 				throw new RuntimeException(responseEntity.getStatusCode().toString());
 			}
-			logger.debug("responseEntity.getBody"+responseEntity.getBody());
+			logger.debug("getMessages:responseEntity.getBody"+responseEntity.getBody());
 	
 	        return HalHelper.getMessages(responseEntity.getBody());
 	        
@@ -456,7 +476,7 @@ public class ActionsServiceManager {
 				logger.error("Error in getMessage for " + uri);
 				throw new RuntimeException(responseEntity.getStatusCode().toString());
 			}
-			logger.debug("responseEntity.getBody"+responseEntity.getBody());
+			logger.debug("getMessage:responseEntity.getBody"+responseEntity.getBody());
 	
 	        return HalHelper.getMessage(responseEntity.getBody());
 	        
@@ -478,14 +498,13 @@ public class ActionsServiceManager {
 		try {
 			logger.debug("getAttachment, uri=" + uri);
 
-//			responseEntity = restTemplate.exchange(uri.toString(), HttpMethod.GET, entityHeadersOnly, byte[].class, "1");
 			responseEntity = restTemplate().exchange(uri.toString(), HttpMethod.GET, entityHeadersOnly, byte[].class, "1");
 
 			if (responseEntity.getStatusCode() != HttpStatus.OK) {
 				logger.error("Error in getAttachment for " + uri);
 				throw new RuntimeException(responseEntity.getStatusCode().toString());
 			} else {
-				logger.debug("getAttachment::responseEntity.getBody"+responseEntity.getBody());
+				logger.debug("getAttachment:responseEntity.getBody"+responseEntity.getBody());
 				writeToFile(writeFile, responseEntity, firmaltDao);
 
 			}
