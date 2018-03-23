@@ -110,8 +110,9 @@ public class DownloadController {
 	 * Read all meldinger i virksomhet(er)s innboks(er)
 	 * 
 	 * 
-	 * @Example: http://gw.systema.no:8080/altinn-proxy/readInnboks.do?user=FREDRIK&forceDetails=false
+	 * @Example: http://gw.systema.no:8080/altinn-proxy/readInnboks.do?user=FREDRIK&forceDetails=false&ignoreStatus=false
 	 * forceDetails=true is adding more data on using 'self'-link, not recommeded to use.
+	 * ignoreStatus=true not including Status Ulest and Lest
 	 * 
 	 * @param session
 	 * @param request, user 
@@ -132,7 +133,9 @@ public class DownloadController {
 			
 			String forceDetails = request.getParameter("forceDetails");
 			
-			List<PrettyPrintMessages> messages = serviceManager.getMessages(Boolean.valueOf(forceDetails));
+			String ignoreStatus = request.getParameter("ignoreStatus");
+			
+			List<PrettyPrintMessages> messages = serviceManager.getMessages(Boolean.valueOf(forceDetails), Boolean.valueOf(ignoreStatus));
 			
 			logger.info("serviceManager.getMessages()");
 			logger.info(FlipTableConverters.fromIterable(messages, PrettyPrintMessages.class));

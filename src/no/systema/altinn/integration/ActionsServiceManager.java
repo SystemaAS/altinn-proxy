@@ -108,11 +108,14 @@ public class ActionsServiceManager {
 	/**
 	 * Get all messages for orgnr
 	 * 
+	 * Executed manually, from DownloadController.
+	 * 
 	 * @see {@link ActionsUriBuilder}
-	 * @param forceDetails, convenience for troubleshooting, typical use is false.
+	 * @param forceDetails -  convenience for troubleshooting, typical use is false.
+	 * @param ignoreStatus -  adding real filter on fromDate = 10.
 	 * @return List<PrettyPrintMessages>
 	 */
-	public List<PrettyPrintMessages> getMessages(boolean forceDetails) {
+	public List<PrettyPrintMessages> getMessages(boolean forceDetails, boolean ignoreStatus) {
 		final List<PrettyPrintMessages> result = new ArrayList<PrettyPrintMessages>();
 		List<FirmaltDao> firmaltDaoList =firmaltDaoService.get();
 		firmaltDaoList.forEach(firmalt -> {
@@ -130,14 +133,39 @@ public class ActionsServiceManager {
 				});
 	
 			} else {
-				List<MessagesHalRepresentation> messages = getMessages(uri, firmalt);
-
-				messages.forEach((message) -> {
-					PrettyPrintMessages log = new PrettyPrintMessages(firmalt.getAiorg(), LocalDateTime.now().toString(),message.getCreatedDate().toString(), 
-							message.getSubject(), message.getServiceOwner(), message.getServiceCode(), message.getServiceEdition(), message.getStatus()  );
-
-					result.add(log);
-				});				
+				if (!ignoreStatus) {
+				
+					List<MessagesHalRepresentation> messages = getMessages(uri, firmalt);
+	
+					messages.forEach((message) -> {
+						PrettyPrintMessages log = new PrettyPrintMessages(firmalt.getAiorg(), LocalDateTime.now().toString(),message.getCreatedDate().toString(), 
+								message.getSubject(), message.getServiceOwner(), message.getServiceCode(), message.getServiceEdition(), message.getStatus()  );
+	
+						result.add(log);
+					});	
+				} else {
+					LocalDateTime fromDate = getFromCreatedDate(firmalt).minusDays(10);				
+					
+					List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, fromDate,firmalt, Status.Ulest, Status.Lest);
+					logger.info("On fromDate="+fromDate +", " + dagsobjors.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.Dagsobjor.getCode()+", ServiceEdition="+ServiceEdition.Dagsobjor.getCode()+", andStatus="+Status.Ulest.getCode()+", orStatus="+Status.Ulest.getCode() );
+					/** 2018_03-02
+					 * Det har også blitt oppdaget en feil i oppsettet for enkelttjeneste for den nye ordningen for dagsoppgjør. Denne feilen berører kun de som ønsker å tildele enkeltpersoner enkelttjenester i Altinn. 
+					* For å løse dette søk opp 4125/150602 "Brev til etterskuddspliktige" og velg denne. I tillegg er det laget en ny enkelttjeneste som er riktig 5012/171208 "Elektronisk kontoutskrift tollkreditt og dagsoppgjør" som vil være gyldig i løpet av 3-4 uker. Tildel denne samtidig og den vil automatisk bli tatt i bruk når den nye tjenesten er klar.
+					* Har en rolle som "Regnskapsmedarbeider" vil en uansett ha tilgang til å laste ned PDF- og e2b-fil fra Altinn og vil ikke bli berørt av endringen.
+					 */
+					//TODO: To be removed when 5012/171208 is working. Planned to work  2018-03/2018-04
+					List<MessagesHalRepresentation> dagsobjorsFIX = getMessages(ServiceOwner.Skatteetaten,ServiceCode.DagsobjorFIX, ServiceEdition.DagsobjorFIX, fromDate,firmalt, Status.Ulest, Status.Lest);
+					logger.info("On fromDate="+fromDate +", " + dagsobjorsFIX.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.DagsobjorFIX.getCode()+", ServiceEdition="+ServiceEdition.DagsobjorFIX.getCode()+", andStatus="+Status.Ulest.getCode()+", orStatus="+Status.Ulest.getCode() );
+					dagsobjors.addAll(dagsobjorsFIX);
+					
+					dagsobjors.forEach((message) -> {
+						PrettyPrintMessages log = new PrettyPrintMessages(firmalt.getAiorg(), LocalDateTime.now().toString(),message.getCreatedDate().toString(), 
+								message.getSubject(), message.getServiceOwner(), message.getServiceCode(), message.getServiceEdition(), message.getStatus()  );
+	
+						result.add(log);
+					});						
+					
+				}
 			
 			}
 		});
@@ -198,12 +226,12 @@ public class ActionsServiceManager {
 	
 	}
 	/*
-	 * Exclude messages, typically with Status "Ulest".
+	 * Exclude messages, typically with Status "Ulest" or "Lest".
 	 */
-	private List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDateTime createdDate, FirmaltDao firmalt, Status status) {
-		logger.info("About to get message greater than "+createdDate+ " for orgnr:"+firmalt.getAiorg()+ ", and status:"+status.getCode());
+	private List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDateTime createdDate, FirmaltDao firmalt, Status andStatus, Status orStatus) {
+		logger.info("About to get message greater than "+createdDate+ " for orgnr:"+firmalt.getAiorg()+ ", andStatus:"+andStatus.getCode()+ ", orStatus:"+orStatus.getCode());
 		final List<MessagesHalRepresentation> result = new ArrayList<MessagesHalRepresentation>();
-		URI uri = ActionsUriBuilder.messages(firmalt.getAihost(), firmalt.getAiorg(), serviceOwner, serviceCode, serviceEdition, createdDate, status);
+		URI uri = ActionsUriBuilder.messages(firmalt.getAihost(), firmalt.getAiorg(), serviceOwner, serviceCode, serviceEdition, createdDate, andStatus, orStatus);
 
 		result.addAll(getMessages(uri, firmalt));
 		
@@ -216,6 +244,8 @@ public class ActionsServiceManager {
 	 * Retrieves all attachment for ServiceOwner.Skatteetaten, ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, for today and stores as defined in {@linkplain FirmaltDao}.aipath
 	 * 
 	 * Note: this is not using Status-filter.
+	 * 
+	 * Executed manually
 	 * 
 	 * @param forceAll removes filter day, convenience for troubleshooting manually, typical use is false.
 	 * @param fraDato - the CreatedDate in www.altinn.no
@@ -311,16 +341,16 @@ public class ActionsServiceManager {
 	private List<PrettyPrintAttachments> getDagsoppgjor(FirmaltDao firmalt) {
 		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
 		LocalDateTime createdDate = getFromCreatedDate(firmalt);
-		List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, createdDate,firmalt, Status.Ulest);
-		logger.info("On createdDate="+createdDate +", " + dagsobjors.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.Dagsobjor.getCode()+", ServiceEdition="+ServiceEdition.Dagsobjor.getCode()+", Status="+Status.Ulest.getCode() );
+		List<MessagesHalRepresentation> dagsobjors = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, createdDate,firmalt, Status.Ulest, Status.Lest);
+		logger.info("On createdDate="+createdDate +", " + dagsobjors.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.Dagsobjor.getCode()+", ServiceEdition="+ServiceEdition.Dagsobjor.getCode()+", andStatus="+Status.Ulest.getCode()+", orStatus="+Status.Ulest.getCode() );
 		/** 2018_03-02
 		 * Det har også blitt oppdaget en feil i oppsettet for enkelttjeneste for den nye ordningen for dagsoppgjør. Denne feilen berører kun de som ønsker å tildele enkeltpersoner enkelttjenester i Altinn. 
 		* For å løse dette søk opp 4125/150602 "Brev til etterskuddspliktige" og velg denne. I tillegg er det laget en ny enkelttjeneste som er riktig 5012/171208 "Elektronisk kontoutskrift tollkreditt og dagsoppgjør" som vil være gyldig i løpet av 3-4 uker. Tildel denne samtidig og den vil automatisk bli tatt i bruk når den nye tjenesten er klar.
 		* Har en rolle som "Regnskapsmedarbeider" vil en uansett ha tilgang til å laste ned PDF- og e2b-fil fra Altinn og vil ikke bli berørt av endringen.
 		 */
 		//TODO: To be removed when 5012/171208 is working. Planned to work  2018-03/2018-04
-		List<MessagesHalRepresentation> dagsobjorsFIX = getMessages(ServiceOwner.Skatteetaten,ServiceCode.DagsobjorFIX, ServiceEdition.DagsobjorFIX, createdDate,firmalt, Status.Ulest);
-		logger.info("On createdDate="+createdDate +", " + dagsobjorsFIX.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.DagsobjorFIX.getCode()+", ServiceEdition="+ServiceEdition.DagsobjorFIX.getCode()+", Status="+Status.Ulest.getCode() );
+		List<MessagesHalRepresentation> dagsobjorsFIX = getMessages(ServiceOwner.Skatteetaten,ServiceCode.DagsobjorFIX, ServiceEdition.DagsobjorFIX, createdDate,firmalt, Status.Ulest, Status.Lest);
+		logger.info("On createdDate="+createdDate +", " + dagsobjorsFIX.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.DagsobjorFIX.getCode()+", ServiceEdition="+ServiceEdition.DagsobjorFIX.getCode()+", andStatus="+Status.Ulest.getCode()+", orStatus="+Status.Ulest.getCode() );
 		dagsobjors.addAll(dagsobjorsFIX);
 		
 		dagsobjors.forEach((message) -> {

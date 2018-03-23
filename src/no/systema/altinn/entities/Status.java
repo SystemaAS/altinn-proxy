@@ -14,6 +14,10 @@ public enum Status {
 	 */
 	Arkivert("Arkivert"),
 	/**
+	 * Lest
+	 */
+	Lest("Lest"),
+	/**
 	 * Ulest
 	 */
 	Ulest("Ulest");
