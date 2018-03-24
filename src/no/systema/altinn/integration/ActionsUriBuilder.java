@@ -158,7 +158,7 @@ public class ActionsUriBuilder {
 	 * Gets all messages for the given 'who', here orgnr. 
 	 * 
 	 * Filtered on Serviceowner, e.g. SKD (=Skatteetaten), ServiceCode, ServiceEdition and CreatedDate (greater than) <br>
-	 * and Status, e.g. Ulest or Lest
+	 * and Status.
 	 * 
 	 * @param host
 	 * @param orgnr
@@ -168,14 +168,14 @@ public class ActionsUriBuilder {
 	 * @param createdDate
 	 * @return URI, ex. GET {who}/Messages?language={language}
 	 */
-	public static URI messages(String host, String orgnr, ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDateTime createdDate, Status andStatus, Status orStatus) {
+	public static URI messages(String host, String orgnr, ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDateTime createdDate, Status status) {
 		UriComponents uriComponents = UriComponentsBuilder.newInstance()
 				.scheme("https")
 				.host(host)
 				.path("/api/{who}/messages")
 			    .query("$filter={expand1}")
 			    .buildAndExpand(orgnr, "ServiceOwner eq \'"+serviceOwner+"\' and ServiceCode eq \'"+serviceCode.getCode()+"\' and ServiceEdition eq "+serviceEdition.getCode() +  " and CreatedDate gt datetime\'"+createdDate+"\'" +
-			    				      " and Status eq '"+andStatus.getCode()+"\'" + " or Status eq '"+orStatus.getCode()+"\'" )
+			    				      " and Status eq '"+status.getCode()+"\'")
 			    .encode();
 
 		return uriComponents.toUri();

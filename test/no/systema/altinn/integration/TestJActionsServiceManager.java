@@ -32,6 +32,7 @@ import no.systema.altinn.entities.PrettyPrintMessages;
 import no.systema.altinn.entities.ServiceCode;
 import no.systema.altinn.entities.ServiceEdition;
 import no.systema.altinn.entities.ServiceOwner;
+import no.systema.altinn.entities.Status;
 import no.systema.jservices.common.dao.FirmaltDao;
 import no.systema.jservices.common.dao.services.FirmaltDaoService;
 import no.systema.jservices.common.util.DateTimeManager;
@@ -73,7 +74,7 @@ public class TestJActionsServiceManager {
 	@Test
 	public final void testGetMessages() {
 		int orgnr = 810514442;    //810514442, 910021451
-		List<PrettyPrintMessages> result = serviceManager.getMessages(false);
+		List<PrettyPrintMessages> result = serviceManager.getMessages(false, false);
 		
 		System.out.println("result.size="+result.size());
 		
@@ -90,19 +91,6 @@ public class TestJActionsServiceManager {
 		assertNotNull(result); 
 	}	
 	
-	@Test
-	public final void testGetMessagesForServiceOwner_ServiceCode_ServiceEdition() {
-		int orgnr = 810514442;    //810514442, 910021451
-
-		List<FirmaltDao> firmaltList = firmaltDaoService.get();
-		assertNotNull(firmaltList);
-		
-		List<MessagesHalRepresentation> result2 = serviceManager.getMessages(ServiceOwner.Skatteetaten, ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, firmaltList.get(0));
-//		result2.forEach((message) ->  System.out.println("message from "+ServiceOwner.Skatteetaten+":"+message));
-		
-		printJsonView(result2);
-		
-	}
 	
 	@Test
 	public final void testGetDagsobjor() {
