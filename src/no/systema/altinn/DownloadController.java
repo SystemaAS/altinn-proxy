@@ -48,7 +48,7 @@ public class DownloadController {
 	 * 
 	 * Note: No state-handling of messages in Altinn!
 	 * 
-	 * @Example: http://gw.systema.no:8080/altinn-proxy/downloadDagsobjor.do?user=FREDRIK&forceAll=false&fraDato=20180101
+	 * @Example: http://gw.systema.no:8080/altinn-proxy/downloadDagsobjor.do?user=FREDRIK&forceAll=false&gtDato=20180101
 	 * forceAll=true , removes date-filter on GET attachment.
 	 * fraDato=set, filter on CreatedDate in www.altin..no, overrides forceAll=true
 	 * 
@@ -72,10 +72,10 @@ public class DownloadController {
 			
 			//Ignoring date-filter
 			String forceAll = request.getParameter("forceAll");
-			//Filter on date
-			String fraDato = request.getParameter("fraDato");
-			if (StringUtils.hasValue(fraDato)) {
-				dagsoppgors = serviceManager.putDagsobjorAttachmentsToPath(Boolean.valueOf(forceAll),getFromCreatedDate(fraDato));
+			//Greater than date
+			String gtDato = request.getParameter("gtDato");
+			if (StringUtils.hasValue(gtDato)) {
+				dagsoppgors = serviceManager.putDagsobjorAttachmentsToPath(Boolean.valueOf(forceAll),getFromCreatedDate(gtDato));
 				sb.append("Dagsoppgjors-filer i meldinger fra Skattetaen er nedlasted. Med filter på fraDato (CreatedDate i altinn). \n \n");
 			} else {
 				dagsoppgors = serviceManager.putDagsobjorAttachmentsToPath(Boolean.valueOf(forceAll), null);

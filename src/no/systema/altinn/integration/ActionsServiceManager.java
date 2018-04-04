@@ -146,7 +146,7 @@ public class ActionsServiceManager {
 				} else {
 					
 					logger.info("NOT ignoreStatus, get all messages with real filter...");
-					LocalDate fromDate = getFromCreatedDate_2(firmalt).minusDays(10);				
+					LocalDate fromDate = getLatestDownloadDate(firmalt).minusDays(10);				
 					
 					List<MessagesHalRepresentation> dagsobjors = new ArrayList<MessagesHalRepresentation>();
 					
@@ -228,6 +228,8 @@ public class ActionsServiceManager {
 	}	
 	/*
 	 * Adding CreatedDate to Odata-filter.
+	 * 
+	 * Only executed manually
 	 */
 	private List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDate createdDate, FirmaltDao firmalt) {
 		logger.info("About to get message greater than "+createdDate+ " for orgnr:"+firmalt.getAiorg());
@@ -242,10 +244,10 @@ public class ActionsServiceManager {
 	/*
 	 * Exclude messages, typically with Status "Ulest" or "Lest".
 	 */
-	private List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDate createdDate, FirmaltDao firmalt, Status status) {
-		logger.info("About to get message greater than "+createdDate+ " for orgnr:"+firmalt.getAiorg()+ ", and Status:"+status.getCode());
+	private List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDate latestDownloadDate, FirmaltDao firmalt, Status status) {
+		logger.info("About to get message greater than "+latestDownloadDate+ " for orgnr:"+firmalt.getAiorg()+ ", and Status:"+status.getCode());
 		final List<MessagesHalRepresentation> result = new ArrayList<MessagesHalRepresentation>();
-		URI uri = ActionsUriBuilder.messages(firmalt.getAihost(), firmalt.getAiorg(), serviceOwner, serviceCode, serviceEdition, createdDate, status);
+		URI uri = ActionsUriBuilder.messages(firmalt.getAihost(), firmalt.getAiorg(), serviceOwner, serviceCode, serviceEdition, latestDownloadDate, status);
 
 		result.addAll(getMessages(uri, firmalt));
 		
@@ -355,17 +357,17 @@ public class ActionsServiceManager {
 	private List<PrettyPrintAttachments> getDagsoppgjor(FirmaltDao firmalt) {
 		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
 //		LocalDateTime createdDate = getFromCreatedDate(firmalt);
-		LocalDate createdDate = getFromCreatedDate_2(firmalt);
+		LocalDate latestDownloadDate = getLatestDownloadDate(firmalt);
 		
 		List<MessagesHalRepresentation> dagsobjors = new ArrayList<MessagesHalRepresentation>();
 		
-		List<MessagesHalRepresentation> dagsobjorsUlest = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, createdDate,firmalt, Status.Ulest);
+		List<MessagesHalRepresentation> dagsobjorsUlest = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, latestDownloadDate,firmalt, Status.Ulest);
 		dagsobjors.addAll(dagsobjorsUlest);
-		logger.info("dagsobjorsUlest: On createdDate="+createdDate +", " + dagsobjors.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.Dagsobjor.getCode()+", ServiceEdition="+ServiceEdition.Dagsobjor.getCode()+", Status="+Status.Ulest.getCode() );
+		logger.info("dagsobjorsUlest: On createdDate="+latestDownloadDate +", " + dagsobjors.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.Dagsobjor.getCode()+", ServiceEdition="+ServiceEdition.Dagsobjor.getCode()+", Status="+Status.Ulest.getCode() );
 		
-		List<MessagesHalRepresentation> dagsobjorsLest = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, createdDate,firmalt, Status.Lest);
+		List<MessagesHalRepresentation> dagsobjorsLest = getMessages(ServiceOwner.Skatteetaten,ServiceCode.Dagsobjor, ServiceEdition.Dagsobjor, latestDownloadDate,firmalt, Status.Lest);
 		dagsobjors.addAll(dagsobjorsLest);
-		logger.info("dagsobjorsLest: On createdDate="+createdDate +", " + dagsobjors.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.Dagsobjor.getCode()+", ServiceEdition="+ServiceEdition.Dagsobjor.getCode()+", Status="+Status.Lest.getCode() );
+		logger.info("dagsobjorsLest: On createdDate="+latestDownloadDate +", " + dagsobjors.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.Dagsobjor.getCode()+", ServiceEdition="+ServiceEdition.Dagsobjor.getCode()+", Status="+Status.Lest.getCode() );
 		
 		/** 2018_03-02
 		 * Det har også blitt oppdaget en feil i oppsettet for enkelttjeneste for den nye ordningen for dagsoppgjør. Denne feilen berører kun de som ønsker å tildele enkeltpersoner enkelttjenester i Altinn. 
@@ -373,13 +375,13 @@ public class ActionsServiceManager {
 		* Har en rolle som "Regnskapsmedarbeider" vil en uansett ha tilgang til å laste ned PDF- og e2b-fil fra Altinn og vil ikke bli berørt av endringen.
 		 */
 		//TODO: To be removed when 5012/171208 is working. Planned to work  2018-03/2018-04
-		List<MessagesHalRepresentation> dagsobjorsFIXUlest = getMessages(ServiceOwner.Skatteetaten,ServiceCode.DagsobjorFIX, ServiceEdition.DagsobjorFIX, createdDate,firmalt, Status.Ulest);
+		List<MessagesHalRepresentation> dagsobjorsFIXUlest = getMessages(ServiceOwner.Skatteetaten,ServiceCode.DagsobjorFIX, ServiceEdition.DagsobjorFIX, latestDownloadDate,firmalt, Status.Ulest);
 		dagsobjors.addAll(dagsobjorsFIXUlest);
-		logger.info("dagsobjorsFIXUlest On createdDate="+createdDate +", " + dagsobjors.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.Dagsobjor.getCode()+", ServiceEdition="+ServiceEdition.Dagsobjor.getCode()+", Status="+Status.Ulest.getCode() );
+		logger.info("dagsobjorsFIXUlest On createdDate="+latestDownloadDate +", " + dagsobjors.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.Dagsobjor.getCode()+", ServiceEdition="+ServiceEdition.Dagsobjor.getCode()+", Status="+Status.Ulest.getCode() );
 		
-		List<MessagesHalRepresentation> dagsobjorsFIXLest = getMessages(ServiceOwner.Skatteetaten,ServiceCode.DagsobjorFIX, ServiceEdition.DagsobjorFIX, createdDate,firmalt, Status.Lest);
+		List<MessagesHalRepresentation> dagsobjorsFIXLest = getMessages(ServiceOwner.Skatteetaten,ServiceCode.DagsobjorFIX, ServiceEdition.DagsobjorFIX, latestDownloadDate,firmalt, Status.Lest);
 		dagsobjors.addAll(dagsobjorsFIXLest);
-		logger.info("dagsobjorsFIXLest On createdDate="+createdDate +", " + dagsobjors.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.Dagsobjor.getCode()+", ServiceEdition="+ServiceEdition.Dagsobjor.getCode()+", Status="+Status.Lest.getCode() );
+		logger.info("dagsobjorsFIXLest On createdDate="+latestDownloadDate +", " + dagsobjors.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.Dagsobjor.getCode()+", ServiceEdition="+ServiceEdition.Dagsobjor.getCode()+", Status="+Status.Lest.getCode() );
 		
 		dagsobjors.forEach((message) -> {
 			logRecords.addAll(getAttachments(message, firmalt));
@@ -413,7 +415,7 @@ public class ActionsServiceManager {
 //
 //	}
 	
-	private LocalDate getFromCreatedDate_2(FirmaltDao firmalt) {
+	private LocalDate getLatestDownloadDate(FirmaltDao firmalt) {
 		int aidato;
 		String aidatoString;
 //		String aitidString;

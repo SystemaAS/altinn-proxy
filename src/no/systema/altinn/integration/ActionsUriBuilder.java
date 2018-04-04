@@ -142,14 +142,14 @@ public class ActionsUriBuilder {
 	 * @param createdDate
 	 * @return URI, ex. GET {who}/Messages?language={language}
 	 */
-	public static URI messages(String host, String orgnr, ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDate createdDate) {
-		LocalDate fromDate = createdDate.minusDays(1);
+	public static URI messages(String host, String orgnr, ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDate latestDownloadDate) {
+		LocalDate latestDownloadDate_2 = latestDownloadDate.plusDays(1);  //to come over midnight
 		UriComponents uriComponents = UriComponentsBuilder.newInstance()
 				.scheme("https")
 				.host(host)
 				.path("/api/{who}/messages")
 			    .query("$filter={expand1}")
-			    .buildAndExpand(orgnr, "ServiceOwner eq \'"+serviceOwner+"\' and ServiceCode eq \'"+serviceCode.getCode()+"\' and ServiceEdition eq "+serviceEdition.getCode() +  " and CreatedDate gt datetime\'"+fromDate+"\'")
+			    .buildAndExpand(orgnr, "ServiceOwner eq \'"+serviceOwner+"\' and ServiceCode eq \'"+serviceCode.getCode()+"\' and ServiceEdition eq "+serviceEdition.getCode() +  " and CreatedDate gt datetime\'"+latestDownloadDate_2+"\'")
 			    .encode();
 
 		return uriComponents.toUri();
@@ -167,17 +167,17 @@ public class ActionsUriBuilder {
 	 * @param serviceOwneer
 	 * @param serviceCode
 	 * @param serviceEdition
-	 * @param createdDate
+	 * @param latestDownloadDate
 	 * @return URI, ex. GET {who}/Messages?language={language}
 	 */
-	public static URI messages(String host, String orgnr, ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDate createdDate, Status status) {
-		LocalDate fromDate = createdDate.minusDays(1);
+	public static URI messages(String host, String orgnr, ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDate latestDownloadDate, Status status) {
+		LocalDate latestDownloadDate_2 = latestDownloadDate.plusDays(1);  //to come over midnight
 		UriComponents uriComponents = UriComponentsBuilder.newInstance()
 				.scheme("https")
 				.host(host)
 				.path("/api/{who}/messages")
 			    .query("$filter={expand1}")
-			    .buildAndExpand(orgnr, "ServiceOwner eq \'"+serviceOwner+"\' and ServiceCode eq \'"+serviceCode.getCode()+"\' and ServiceEdition eq "+serviceEdition.getCode() +  " and CreatedDate gt datetime\'"+fromDate+"\'" +
+			    .buildAndExpand(orgnr, "ServiceOwner eq \'"+serviceOwner+"\' and ServiceCode eq \'"+serviceCode.getCode()+"\' and ServiceEdition eq "+serviceEdition.getCode() +  " and CreatedDate gt datetime\'"+latestDownloadDate_2+"\'" +
 			    				      " and Status eq '"+status.getCode()+"\'")
 			    .encode();
 
