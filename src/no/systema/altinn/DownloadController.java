@@ -159,15 +159,15 @@ public class DownloadController {
 
 	}
 
-	private LocalDateTime getFromCreatedDate(String fraDato) {
+	private LocalDate getFromCreatedDate(String fraDato) {
 		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd"); //as defined in Firmalt
-		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HHmmss");  //as defined in Firmalt.
+//		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HHmmss");  //as defined in Firmalt.
 
-		String fraTime = "000000";
+//		String fraTime = "000000";
 		LocalDate fromDate = LocalDate.parse(fraDato, dateFormatter);
-		LocalTime fromTime = LocalTime.parse(fraTime, timeFormatter);
+//		LocalTime fromTime = LocalTime.parse(fraTime, timeFormatter);
 		
-		return  LocalDateTime.of(fromDate, fromTime);
+		return fromDate;
 	}	
 	
 	@Autowired

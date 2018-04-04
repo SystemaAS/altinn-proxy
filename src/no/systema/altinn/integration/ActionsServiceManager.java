@@ -9,7 +9,6 @@ import java.net.Proxy;
 import java.net.URI;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -126,7 +125,7 @@ public class ActionsServiceManager {
 				messages.forEach((message) -> {
 					String self = message.getLinks().getLinksBy("self").get(0).getHref();
 					MessagesHalRepresentation halMessage = getMessage(URI.create(self),firmalt);
-					PrettyPrintMessages log = new PrettyPrintMessages(firmalt.getAiorg(), LocalDateTime.now().toString(),halMessage.getCreatedDate().toString(), 
+					PrettyPrintMessages log = new PrettyPrintMessages(firmalt.getAiorg(), LocalDate.now().toString(),halMessage.getCreatedDate().toString(), 
 							halMessage.getSubject(), halMessage.getServiceOwner(), halMessage.getServiceCode(), halMessage.getServiceEdition(), halMessage.getStatus() );
 
 					result.add(log);
@@ -139,7 +138,7 @@ public class ActionsServiceManager {
 					List<MessagesHalRepresentation> messages = getMessages(uri, firmalt);
 	
 					messages.forEach((message) -> {
-						PrettyPrintMessages log = new PrettyPrintMessages(firmalt.getAiorg(), LocalDateTime.now().toString(),message.getCreatedDate().toString(), 
+						PrettyPrintMessages log = new PrettyPrintMessages(firmalt.getAiorg(), LocalDate.now().toString(),message.getCreatedDate().toString(), 
 								message.getSubject(), message.getServiceOwner(), message.getServiceCode(), message.getServiceEdition(), message.getStatus()  );
 	
 						result.add(log);
@@ -147,7 +146,7 @@ public class ActionsServiceManager {
 				} else {
 					
 					logger.info("NOT ignoreStatus, get all messages with real filter...");
-					LocalDateTime fromDate = getFromCreatedDate(firmalt).minusDays(10);				
+					LocalDate fromDate = getFromCreatedDate_2(firmalt).minusDays(10);				
 					
 					List<MessagesHalRepresentation> dagsobjors = new ArrayList<MessagesHalRepresentation>();
 					
@@ -174,7 +173,7 @@ public class ActionsServiceManager {
 					logger.info("dagsobjorsFIXLest On fromDate="+fromDate +", " + dagsobjors.size() +" messages found on ServiceOwner="+ServiceOwner.Skatteetaten.getCode()+", ServiceCode="+ServiceCode.Dagsobjor.getCode()+", ServiceEdition="+ServiceEdition.Dagsobjor.getCode()+", Status="+Status.Lest.getCode() );
 					
 					dagsobjors.forEach((message) -> {
-						PrettyPrintMessages log = new PrettyPrintMessages(firmalt.getAiorg(), LocalDateTime.now().toString(),message.getCreatedDate().toString(), 
+						PrettyPrintMessages log = new PrettyPrintMessages(firmalt.getAiorg(), LocalDate.now().toString(),message.getCreatedDate().toString(), 
 								message.getSubject(), message.getServiceOwner(), message.getServiceCode(), message.getServiceEdition(), message.getStatus()  );
 	
 						result.add(log);
@@ -230,7 +229,7 @@ public class ActionsServiceManager {
 	/*
 	 * Adding CreatedDate to Odata-filter.
 	 */
-	private List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDateTime createdDate, FirmaltDao firmalt) {
+	private List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDate createdDate, FirmaltDao firmalt) {
 		logger.info("About to get message greater than "+createdDate+ " for orgnr:"+firmalt.getAiorg());
 		final List<MessagesHalRepresentation> result = new ArrayList<MessagesHalRepresentation>();
 		URI uri = ActionsUriBuilder.messages(firmalt.getAihost(), firmalt.getAiorg(), serviceOwner, serviceCode, serviceEdition, createdDate);
@@ -243,7 +242,7 @@ public class ActionsServiceManager {
 	/*
 	 * Exclude messages, typically with Status "Ulest" or "Lest".
 	 */
-	private List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDateTime createdDate, FirmaltDao firmalt, Status status) {
+	private List<MessagesHalRepresentation> getMessages(ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDate createdDate, FirmaltDao firmalt, Status status) {
 		logger.info("About to get message greater than "+createdDate+ " for orgnr:"+firmalt.getAiorg()+ ", and Status:"+status.getCode());
 		final List<MessagesHalRepresentation> result = new ArrayList<MessagesHalRepresentation>();
 		URI uri = ActionsUriBuilder.messages(firmalt.getAihost(), firmalt.getAiorg(), serviceOwner, serviceCode, serviceEdition, createdDate, status);
@@ -266,7 +265,7 @@ public class ActionsServiceManager {
 	 * @param fraDato - the CreatedDate in www.altinn.no
 	 * @return List of fileNames
 	 */
-	public List<PrettyPrintAttachments> putDagsobjorAttachmentsToPath(boolean forceAll, LocalDateTime fraDato) {
+	public List<PrettyPrintAttachments> putDagsobjorAttachmentsToPath(boolean forceAll, LocalDate fraDato) {
 		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
 		final List<FirmaltDao> firmaltDaoList =firmaltDaoService.get();
 		firmaltDaoList.forEach(firmalt -> {
@@ -355,7 +354,8 @@ public class ActionsServiceManager {
 	
 	private List<PrettyPrintAttachments> getDagsoppgjor(FirmaltDao firmalt) {
 		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
-		LocalDateTime createdDate = getFromCreatedDate(firmalt);
+//		LocalDateTime createdDate = getFromCreatedDate(firmalt);
+		LocalDate createdDate = getFromCreatedDate_2(firmalt);
 		
 		List<MessagesHalRepresentation> dagsobjors = new ArrayList<MessagesHalRepresentation>();
 		
@@ -394,10 +394,29 @@ public class ActionsServiceManager {
 		
 	}
 	
-	private LocalDateTime getFromCreatedDate(FirmaltDao firmalt) {
+//	private LocalDateTime getFromCreatedDate(FirmaltDao firmalt) {
+//		int aidato;
+//		String aidatoString;
+//		String aitidString;
+//		if (firmalt.getAidato() == 0) {
+//			throw new RuntimeException("FIRMALT.aidato not set!");
+//		} else {
+//			aidato = firmalt.getAidato();
+//			aidatoString = String.valueOf(aidato);
+//		}
+//
+//		aitidString = String.format("%06d", firmalt.getAitid());  //pad up to 6 char, value can be between e.g. 3 to 122333	eq. 00:00:03 and 12:23:33
+//		LocalDate fromDate = LocalDate.parse(aidatoString, dateFormatter);
+//		LocalTime fromTime = LocalTime.parse(aitidString, timeFormatter);
+//		
+//		return  LocalDateTime.of(fromDate, fromTime);
+//
+//	}
+	
+	private LocalDate getFromCreatedDate_2(FirmaltDao firmalt) {
 		int aidato;
 		String aidatoString;
-		String aitidString;
+//		String aitidString;
 		if (firmalt.getAidato() == 0) {
 			throw new RuntimeException("FIRMALT.aidato not set!");
 		} else {
@@ -405,14 +424,16 @@ public class ActionsServiceManager {
 			aidatoString = String.valueOf(aidato);
 		}
 
-		aitidString = String.format("%06d", firmalt.getAitid());  //pad up to 6 char, value can be between e.g. 3 to 122333	eq. 00:00:03 and 12:23:33
+//		aitidString = String.format("%06d", firmalt.getAitid());  //pad up to 6 char, value can be between e.g. 3 to 122333	eq. 00:00:03 and 12:23:33
 		LocalDate fromDate = LocalDate.parse(aidatoString, dateFormatter);
-		LocalTime fromTime = LocalTime.parse(aitidString, timeFormatter);
+//		LocalTime fromTime = LocalTime.parse(aitidString, timeFormatter);
 		
-		return  LocalDateTime.of(fromDate, fromTime);
+		return  fromDate;
 
-	}
-		
+	}	
+	
+	
+	
 	private void updateDownloadDato(FirmaltDao firmalt) {
 		LocalDateTime now = LocalDateTime.now();
 		String nowDate = now.format(dateFormatter);

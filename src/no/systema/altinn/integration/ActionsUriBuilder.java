@@ -1,6 +1,7 @@
 package no.systema.altinn.integration;
 
 import java.net.URI;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import org.springframework.web.util.UriComponents;
@@ -141,13 +142,14 @@ public class ActionsUriBuilder {
 	 * @param createdDate
 	 * @return URI, ex. GET {who}/Messages?language={language}
 	 */
-	public static URI messages(String host, String orgnr, ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDateTime createdDate) {
+	public static URI messages(String host, String orgnr, ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDate createdDate) {
+		LocalDate fromDate = createdDate.minusDays(1);
 		UriComponents uriComponents = UriComponentsBuilder.newInstance()
 				.scheme("https")
 				.host(host)
 				.path("/api/{who}/messages")
 			    .query("$filter={expand1}")
-			    .buildAndExpand(orgnr, "ServiceOwner eq \'"+serviceOwner+"\' and ServiceCode eq \'"+serviceCode.getCode()+"\' and ServiceEdition eq "+serviceEdition.getCode() +  " and CreatedDate gt datetime\'"+createdDate+"\'")
+			    .buildAndExpand(orgnr, "ServiceOwner eq \'"+serviceOwner+"\' and ServiceCode eq \'"+serviceCode.getCode()+"\' and ServiceEdition eq "+serviceEdition.getCode() +  " and CreatedDate gt datetime\'"+fromDate+"\'")
 			    .encode();
 
 		return uriComponents.toUri();
@@ -168,13 +170,14 @@ public class ActionsUriBuilder {
 	 * @param createdDate
 	 * @return URI, ex. GET {who}/Messages?language={language}
 	 */
-	public static URI messages(String host, String orgnr, ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDateTime createdDate, Status status) {
+	public static URI messages(String host, String orgnr, ServiceOwner serviceOwner, ServiceCode serviceCode, ServiceEdition serviceEdition, LocalDate createdDate, Status status) {
+		LocalDate fromDate = createdDate.minusDays(1);
 		UriComponents uriComponents = UriComponentsBuilder.newInstance()
 				.scheme("https")
 				.host(host)
 				.path("/api/{who}/messages")
 			    .query("$filter={expand1}")
-			    .buildAndExpand(orgnr, "ServiceOwner eq \'"+serviceOwner+"\' and ServiceCode eq \'"+serviceCode.getCode()+"\' and ServiceEdition eq "+serviceEdition.getCode() +  " and CreatedDate gt datetime\'"+createdDate+"\'" +
+			    .buildAndExpand(orgnr, "ServiceOwner eq \'"+serviceOwner+"\' and ServiceCode eq \'"+serviceCode.getCode()+"\' and ServiceEdition eq "+serviceEdition.getCode() +  " and CreatedDate gt datetime\'"+fromDate+"\'" +
 			    				      " and Status eq '"+status.getCode()+"\'")
 			    .encode();
 
