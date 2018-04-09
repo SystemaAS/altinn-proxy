@@ -618,7 +618,7 @@ public class ActionsServiceManager {
 		firmaltDaoList.forEach((firmalt) -> {
 			try {
 				firmalt.hasSaneValues();
-				logger.error("Firmalt record seems ok, record="+ReflectionToStringBuilder.toString(firmalt));
+				logger.info("Firmalt record seems ok, record="+ReflectionToStringBuilder.toString(firmalt));
 			} catch (RuntimeException e) {
 				logger.error("Firmalt record has suspicious values, record="+ReflectionToStringBuilder.toString(firmalt), e);
 				throw e;

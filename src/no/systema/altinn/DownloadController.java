@@ -80,7 +80,7 @@ public class DownloadController {
 			String gtDato = request.getParameter("gtDato");
 			if (StringUtils.hasValue(gtDato)) {
 				dagsoppgors = serviceManager.putDagsobjorAttachmentsToPath(Boolean.valueOf(forceAll),getFromCreatedDate(gtDato));
-				sb.append("Dagsoppgjors-filer i meldinger fra Skattetaen er nedlasted. Med filter på fraDato (CreatedDate i altinn). \n \n");
+				sb.append("Dagsoppgjors-filer i meldinger fra Skattetaen er nedlasted. Med filter på gtDato (CreatedDate i altinn). \n \n");
 			} else {
 				dagsoppgors = serviceManager.putDagsobjorAttachmentsToPath(Boolean.valueOf(forceAll), null);
 				if (StringUtils.hasValue(forceAll) && Boolean.valueOf(forceAll).booleanValue()) {

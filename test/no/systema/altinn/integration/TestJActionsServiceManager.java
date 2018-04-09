@@ -82,17 +82,6 @@ public class TestJActionsServiceManager {
 	}
 	
 	@Test
-	public final void testGetMessagesForServiceOwner_Samlesider() {
-		int orgnr = 810514442;    //810514442, 910021451
-
-		List<MessagesHalRepresentation> result = serviceManager.getMessages(ServiceOwner.Samlesider);
-		result.forEach((message) ->  System.out.println("message from "+ServiceOwner.Samlesider+":"+message));
-		
-		assertNotNull(result); 
-	}	
-	
-	
-	@Test
 	public final void testGetDagsobjor() {
 		
 		serviceManager.putDagsobjorAttachmentsToPath(false, null);
