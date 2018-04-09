@@ -1,5 +1,7 @@
 package no.systema.altinn;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -12,6 +14,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -27,6 +30,7 @@ import no.systema.altinn.entities.PrettyPrintMessages;
 import no.systema.altinn.integration.ActionsServiceManager;
 import no.systema.jservices.common.dao.FirmaltDao;
 import no.systema.jservices.common.dao.services.BridfDaoService;
+import no.systema.jservices.common.util.Log4jUtils;
 import no.systema.jservices.common.util.StringUtils;
 /**
  * This controller is mainly for troubleshooting. <br>
@@ -50,7 +54,7 @@ public class DownloadController {
 	 * 
 	 * @Example: http://gw.systema.no:8080/altinn-proxy/downloadDagsobjor.do?user=FREDRIK&forceAll=false&gtDato=20180101
 	 * forceAll=true , removes date-filter on GET attachment.
-	 * fraDato=set, filter on CreatedDate in www.altin..no, overrides forceAll=true
+	 * gtDato=set, filter on CreatedDate in www.altin..no, overrides forceAll=true
 	 * 
 	 * @param session
 	 * @param request, user 
@@ -159,16 +163,62 @@ public class DownloadController {
 
 	}
 
+	/**
+	 * 
+	 * @Example: http://gw.systema.no:8080/altinn-proxy/showHistory.do?user=FREDRIK&filename=log4j_altinn-proxy.log
+	 * 
+	 * @param session
+	 * @param request, user 
+	 * @return status
+	 */	
+	@RequestMapping(value="showHistory.do", method={RequestMethod.GET, RequestMethod.POST})
+	@ResponseBody
+	public String showHistory(HttpSession session, HttpServletRequest request) {
+		StringBuilder sb = new StringBuilder();
+
+		logger.info("showHistory.do...");
+		try {
+			String user = request.getParameter("user");
+			Assert.notNull(user, "user must be delivered."); 
+
+			String userName = bridfDaoService.getUserName(user);
+			Assert.notNull(userName, "userName not found in Bridf."); 
+
+			String fileName = request.getParameter("filename");
+			Assert.notNull(fileName, "fileName must be delivered."); 			
+			
+			
+			sb.append(Log4jUtils.getLog4jData(fileName));
+			
+			
+		} catch (Exception e) {
+			// write std.output error output
+			e.printStackTrace();
+			Writer writer = new StringWriter();
+			PrintWriter printWriter = new PrintWriter(writer);
+			e.printStackTrace(printWriter);
+			return "ERROR [JsonResponseOutputterController]" + writer.toString();
+		}
+
+		session.invalidate();
+		return sb.toString();
+
+	}
+	
 	private LocalDate getFromCreatedDate(String fraDato) {
 		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd"); //as defined in Firmalt
-//		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HHmmss");  //as defined in Firmalt.
-
-//		String fraTime = "000000";
 		LocalDate fromDate = LocalDate.parse(fraDato, dateFormatter);
-//		LocalTime fromTime = LocalTime.parse(fraTime, timeFormatter);
 		
 		return fromDate;
 	}	
+
+//	private String getLog4jData(String fileName) throws IOException {
+//		String logPath = System.getProperty("catalina.home") + "/logs/";
+//		File fileToView = FileUtils.getFile(logPath + fileName);
+//		
+//		return FileUtils.readFileToString(fileToView);
+//		
+//	}
 	
 	@Autowired
 	private BridfDaoService bridfDaoService;
