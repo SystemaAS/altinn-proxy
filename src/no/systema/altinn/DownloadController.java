@@ -1,20 +1,15 @@
 package no.systema.altinn;
 
-import java.io.File;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -212,14 +207,6 @@ public class DownloadController {
 		return fromDate;
 	}	
 
-//	private String getLog4jData(String fileName) throws IOException {
-//		String logPath = System.getProperty("catalina.home") + "/logs/";
-//		File fileToView = FileUtils.getFile(logPath + fileName);
-//		
-//		return FileUtils.readFileToString(fileToView);
-//		
-//	}
-	
 	@Autowired
 	private BridfDaoService bridfDaoService;
 	

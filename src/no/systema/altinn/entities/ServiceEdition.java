@@ -6,7 +6,6 @@ import no.systema.altinn.integration.ActionsServiceManager;
  * Enum for possible serviceedition in Altinn <br><br>
  * To use in combination with {@linkplain ServiceCode}
  * 
- * For full list @see {@linkplain ActionsServiceManager} getMetadata
  * 
  * @author Fredrik Möller
  * @date 2018-01

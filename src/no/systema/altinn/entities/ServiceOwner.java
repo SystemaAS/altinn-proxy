@@ -5,7 +5,6 @@ import no.systema.altinn.integration.ActionsServiceManager;
 /**
  * Enum for possible serviceowner in Altinn <br><br>
  * 
- * For full list @see {@linkplain ActionsServiceManager} getMetadata
  * 
  * @author Fredrik Möller
  * @date 2018-01

@@ -11,8 +11,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.IllegalFormatException;
 import java.util.List;
+
+import javax.annotation.PostConstruct;
 
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.log4j.Logger;
@@ -32,7 +33,6 @@ import com.jakewharton.fliptables.FlipTableConverters;
 
 import de.otto.edison.hal.Link;
 import no.systema.altinn.entities.ApiKey;
-import no.systema.altinn.entities.AttachmentHalRepresentation;
 import no.systema.altinn.entities.MessagesHalRepresentation;
 import no.systema.altinn.entities.PrettyPrintAttachments;
 import no.systema.altinn.entities.PrettyPrintMessages;
@@ -54,7 +54,7 @@ import no.systema.jservices.common.util.DateTimeManager;
  * @date 2018-01
  *
  */
-@EnableScheduling
+//@EnableScheduling
 @Service("actionsservicemanager")
 public class ActionsServiceManager {
 	private static Logger logger = Logger.getLogger(ActionsServiceManager.class);
@@ -76,11 +76,24 @@ public class ActionsServiceManager {
     @Value("${altinn.access.proxy.port}")
     String port;	
 	
+    @PostConstruct 
+    public void init(){
+    	LocalDateTime now = LocalDateTime.now();
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter
+                .ofPattern("yyyy-MM-dd HH:mm:ss SS");
+        
+        now.format(formatter);
+    	
+      logger.info("ActionsServiceManager has been initialized, time="+now.format(formatter));
+    }
+    
+    
+    
 	private RestTemplate restTemplate() {
 		SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
 
-		logger.info("useProxy="+useProxy);
-		logger.debug("proxyHost="+proxyHost+", port="+port);
+//		logger.info("useProxy="+useProxy);
+//		logger.debug("proxyHost="+proxyHost+", port="+port);
 		
 		if (Boolean.valueOf(useProxy)) {
 	        int portNr = -1;
@@ -330,34 +343,40 @@ public class ActionsServiceManager {
 	}
 
 
-	@Scheduled(cron="${altinn.file.download.cron.pattern}")
-	private List<PrettyPrintAttachments> putDagsobjorAttachmentsToPath() {
+//	@Scheduled(cron="${altinn.file.download.cron.pattern}")
+//	@Scheduled(cron="0 */5 * * * *")  //5 min
+	public void putDagsobjorAttachmentsToPath() {
+		logger.debug("::putDagsobjorAttachmentsToPath (Started by Scheduler)::");
+		LocalDateTime now = LocalDateTime.now();
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter
+                .ofPattern("yyyy-MM-dd HH:mm:ss SS");
+        
+       logger.info("putDagsobjorAttachmentsToPath() start running, time="+now.format(formatter));
+		
 		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
 		List<FirmaltDao> firmaltDaoList = null;
 
 		try {
 			firmaltDaoList = getSaneFirmaltRecords();
 		} catch (Exception e) {
-			logger.fatal("Something wrong with FIRMALT, aborting.");
-			return logRecords;
+			logger.fatal("Something wrong with FIRMALT, Throwing exception.");
+			throw e;
 		}
 		
 		firmaltDaoList.forEach(firmalt -> {
-			logger.info("::Scheduled::Actual values in FIRMALT="+ReflectionToStringBuilder.toString(firmalt));
-			logger.info("::Scheduled:: :Get messages for orgnnr:"+firmalt.getAiorg());
+			logger.info("::Started by Scheduler::Actual values in FIRMALT="+ReflectionToStringBuilder.toString(firmalt));
+			logger.info("::Started by Scheduler:: :Get messages for orgnnr:"+firmalt.getAiorg());
 			if (!isDownloadedToday(firmalt)) {
 				logRecords.addAll(getDagsoppgjor(firmalt));	
 
-				logger.info("::Scheduled:: download of Dagsoppgjors attachments is executed.");
+				logger.info("::Started by Scheduler:: download of Dagsoppgjors attachments is executed.");
 				logger.info(FlipTableConverters.fromIterable(logRecords, PrettyPrintAttachments.class));
 			} else {
-				logger.info("::Scheduled:: orgnnr:"+firmalt.getAiorg() +" Already downloaded today.");
+				logger.info("::Started by Scheduler:: orgnnr:"+firmalt.getAiorg() +" Already downloaded today.");
 			}
 			
 		});
 		
-		return logRecords;
-
 	}	
 	
 	private List<PrettyPrintAttachments> getDagsoppgjor(FirmaltDao firmalt) {
