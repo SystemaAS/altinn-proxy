@@ -54,7 +54,6 @@ import no.systema.jservices.common.util.DateTimeManager;
  * @date 2018-01
  *
  */
-//@EnableScheduling
 @Service("actionsservicemanager")
 public class ActionsServiceManager {
 	private static Logger logger = Logger.getLogger(ActionsServiceManager.class);
@@ -343,15 +342,13 @@ public class ActionsServiceManager {
 	}
 
 
-//	@Scheduled(cron="${altinn.file.download.cron.pattern}")
-//	@Scheduled(cron="0 */5 * * * *")  //5 min
 	public void putDagsobjorAttachmentsToPath() {
-		logger.debug("::putDagsobjorAttachmentsToPath (Started by Scheduler)::");
+		logger.debug("::Starting putDagsobjorAttachmentsToPath ::");
 		LocalDateTime now = LocalDateTime.now();
         java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter
                 .ofPattern("yyyy-MM-dd HH:mm:ss SS");
         
-       logger.info("putDagsobjorAttachmentsToPath() start running, time="+now.format(formatter));
+       logger.info("::putDagsobjorAttachmentsToPath() start running, time="+now.format(formatter));
 		
 		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
 		List<FirmaltDao> firmaltDaoList = null;
@@ -364,15 +361,15 @@ public class ActionsServiceManager {
 		}
 		
 		firmaltDaoList.forEach(firmalt -> {
-			logger.info("::Started by Scheduler::Actual values in FIRMALT="+ReflectionToStringBuilder.toString(firmalt));
-			logger.info("::Started by Scheduler:: :Get messages for orgnnr:"+firmalt.getAiorg());
+			logger.info("::orgnnr:"+firmalt.getAiorg() +", record="+ReflectionToStringBuilder.toString(firmalt));
+			logger.info("::orgnnr:"+firmalt.getAiorg() +", get Dagsoppgjors");
 			if (!isDownloadedToday(firmalt)) {
 				logRecords.addAll(getDagsoppgjor(firmalt));	
 
-				logger.info("::Started by Scheduler:: download of Dagsoppgjors attachments is executed.");
+				logger.info("::orgnnr:"+firmalt.getAiorg() +", download of Dagsoppgjors attachments is executed.");
 				logger.info(FlipTableConverters.fromIterable(logRecords, PrettyPrintAttachments.class));
 			} else {
-				logger.info("::Started by Scheduler:: orgnnr:"+firmalt.getAiorg() +" Already downloaded today.");
+				logger.info("::orgnnr:"+firmalt.getAiorg() +", Already downloaded today.");
 			}
 			
 		});

@@ -4,6 +4,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -199,6 +200,56 @@ public class DownloadController {
 		return sb.toString();
 
 	}
+	
+	/**
+	 * 
+	 * @Example: http://gw.systema.no:8080/altinn-proxy/initDownloadDagsoppgjor.do?user=FREDRIK
+	 * 
+	 * @param session
+	 * @param request, user 
+	 * @return status
+	 */	
+	@RequestMapping(value="initDownloadDagsoppgjor.do", method={RequestMethod.GET, RequestMethod.POST})
+	@ResponseBody
+	public String initDownloadDagsoppgjor(HttpSession session, HttpServletRequest request) {
+		StringBuilder sb = new StringBuilder();
+
+		logger.info("initDownloadDagsoppgjor.do...");
+		try {
+			String user = request.getParameter("user");
+			String userName = bridfDaoService.getUserName(user);
+
+			if (userName == null) {
+				logger.error("user is null, must be delivered");
+				throw new RuntimeException("ERROR: parameter, user, must be delivered!");
+			}
+
+			LocalDateTime now = LocalDateTime.now();
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss SS");
+			logger.info("::About to execute serviceManager.putDagsobjorAttachmentsToPath(), time=" + now.format(formatter));
+
+			serviceManager.putDagsobjorAttachmentsToPath();
+
+			logger.info("::serviceManager.putDagsobjorAttachmentsToPath() executed, time=" + now.format(formatter));
+			
+			sb.append("serviceManager.putDagsobjorAttachmentsToPath() executed.");
+			
+			
+		} catch (Exception e) {
+			// write std.output error output
+			e.printStackTrace();
+			Writer writer = new StringWriter();
+			PrintWriter printWriter = new PrintWriter(writer);
+			e.printStackTrace(printWriter);
+			return "ERROR [JsonResponseOutputterController]" + writer.toString();
+		}
+
+		session.invalidate();
+		return sb.toString();
+
+	}	
+	
+	
 	
 	private LocalDate getFromCreatedDate(String fraDato) {
 		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd"); //as defined in Firmalt
