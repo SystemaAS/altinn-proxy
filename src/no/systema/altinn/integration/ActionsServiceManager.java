@@ -342,6 +342,12 @@ public class ActionsServiceManager {
 	}
 
 
+	/**
+	 * Retrive dagsoppgjor for all orgnr defined in FIRMALT.
+	 * 
+	 * Saving the attachments to disk on path defined in FIRMALT.AIPATH
+	 * 
+	 */
 	public void putDagsobjorAttachmentsToPath() {
 		logger.debug("::Starting putDagsobjorAttachmentsToPath ::");
 		LocalDateTime now = LocalDateTime.now();
@@ -374,7 +380,43 @@ public class ActionsServiceManager {
 			
 		});
 		
-	}	
+	}
+	
+	/**
+	 * Retrive dagsoppgjor for delivered orgnr. 
+	 * 
+	 * Saving the attachments to disk on path defined in FIRMALT.AIPATH
+	 * @param orgnr - need to be defined in FIRMALT.
+	 * 
+	 */
+	public void putDagsobjorAttachmentsToPath(String orgnr) {
+		logger.debug("::Starting putDagsobjorAttachmentsToPath for orgnr="+orgnr+" ::");
+		LocalDateTime now = LocalDateTime.now();
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter
+                .ofPattern("yyyy-MM-dd HH:mm:ss SS");
+        
+       logger.info("::putDagsobjorAttachmentsToPath() start running, time="+now.format(formatter));
+		
+		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();
+		FirmaltDao firmalt = firmaltDaoService.getFirmaltDao(orgnr);
+
+		if (firmalt == null) {
+			throw new RuntimeException("Could not find FIRMALT record on orgnr:"+orgnr);
+		}
+		
+		logger.info("::orgnnr:" + firmalt.getAiorg() + ", record=" + ReflectionToStringBuilder.toString(firmalt));
+		logger.info("::orgnnr:" + firmalt.getAiorg() + ", get Dagsoppgjors");
+		if (!isDownloadedToday(firmalt)) {
+			logRecords.addAll(getDagsoppgjor(firmalt));
+
+			logger.info("::orgnnr:" + firmalt.getAiorg() + ", download of Dagsoppgjors attachments is executed.");
+			logger.info(FlipTableConverters.fromIterable(logRecords, PrettyPrintAttachments.class));
+		} else {
+			logger.info("::orgnnr:" + firmalt.getAiorg() + ", Already downloaded today.");
+		}
+		
+	}		
+	
 	
 	private List<PrettyPrintAttachments> getDagsoppgjor(FirmaltDao firmalt) {
 		List<PrettyPrintAttachments> logRecords = new ArrayList<PrettyPrintAttachments>();

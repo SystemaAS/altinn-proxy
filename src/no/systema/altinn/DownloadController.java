@@ -203,7 +203,7 @@ public class DownloadController {
 	
 	/**
 	 * 
-	 * @Example: http://gw.systema.no:8080/altinn-proxy/initDownloadDagsoppgjor.do?user=FREDRIK
+	 * @Example: http://gw.systema.no:8080/altinn-proxy/initDownloadDagsoppgjor.do?user=SYSTEMA&orgnr=810514442
 	 * 
 	 * @param session
 	 * @param request, user 
@@ -213,26 +213,37 @@ public class DownloadController {
 	@ResponseBody
 	public String initDownloadDagsoppgjor(HttpSession session, HttpServletRequest request) {
 		StringBuilder sb = new StringBuilder();
+		LocalDateTime now = LocalDateTime.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss SS");
 
 		logger.info("initDownloadDagsoppgjor.do...");
 		try {
 			String user = request.getParameter("user");
 			String userName = bridfDaoService.getUserName(user);
-
 			if (userName == null) {
 				logger.error("user is null, must be delivered");
 				throw new RuntimeException("ERROR: parameter, user, must be delivered!");
 			}
-
-			LocalDateTime now = LocalDateTime.now();
-			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss SS");
-			logger.info("::About to execute serviceManager.putDagsobjorAttachmentsToPath(), time=" + now.format(formatter));
-
-			serviceManager.putDagsobjorAttachmentsToPath();
-
-			logger.info("::serviceManager.putDagsobjorAttachmentsToPath() executed, time=" + now.format(formatter));
+			logger.info("user="+user);
 			
-			sb.append("serviceManager.putDagsobjorAttachmentsToPath() executed.");
+			String orgNr = request.getParameter("orgnr");
+			if (orgNr != null) {
+				logger.info("orgnr="+orgNr);
+				logger.info("::About to execute serviceManager.putDagsobjorAttachmentsToPath("+orgNr+"), time=" + now.format(formatter));
+				serviceManager.putDagsobjorAttachmentsToPath(orgNr);
+				logger.info("::serviceManager.putDagsobjorAttachmentsToPath() executed, time=" + now.format(formatter));
+				
+				sb.append("serviceManager.putDagsobjorAttachmentsToPath("+orgNr+") executed.");
+				
+				
+			} else {
+				logger.info("orgnr="+orgNr);
+				logger.info("::About to execute serviceManager.putDagsobjorAttachmentsToPath(), time=" + now.format(formatter));
+				serviceManager.putDagsobjorAttachmentsToPath();
+				logger.info("::serviceManager.putDagsobjorAttachmentsToPath() executed, time=" + now.format(formatter));
+				
+				sb.append("serviceManager.putDagsobjorAttachmentsToPath() executed.");
+			}
 			
 			
 		} catch (Exception e) {
