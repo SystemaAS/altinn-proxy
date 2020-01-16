@@ -62,7 +62,8 @@ public class Authorization {
 	 * @return the ClientHttpRequestFactory with configured SSLContext
 	 */
 	private ClientHttpRequestFactory getRequestFactory(FirmaltDao firmaltDao) { 
-		String[] TLS_PROTOCOLS = {"TLSv1", "TLSv1.1" /*, "TLSv1.2"*/}; // Comment in TLSv1.2 to fail : bug in altinn or java that fails TLS handshake most of the time, but not always
+		//String[] TLS_PROTOCOLS = {"TLSv1", "TLSv1.1" /*, "TLSv1.2"*/}; // Comment in TLSv1.2 to fail : bug in altinn or java that fails TLS handshake most of the time, but not always
+		String[] TLS_PROTOCOLS = {"TLSv1.2"}; // Comment in TLSv1.2 to fail : bug in altinn or java that fails TLS handshake most of the time, but not always
 		String[] CIPHER_SUITES = null; // {"TLS_RSA_WITH_AES_128_GCM_SHA256"};
 
 		char[] password = firmaltDao.getAipwd().toCharArray();

@@ -3,7 +3,7 @@
 	xmlns="http://java.sun.com/xml/ns/javaee" 
 	xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" 
 	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" version="2.5">
-  <display-name>Altinn proxy(2019-08-23)</display-name>
+  <display-name>Altinn proxy(2020-01-16)</display-name>
    <!--  resources --> 
   <context-param>
     <param-name>contextConfigLocation</param-name>
