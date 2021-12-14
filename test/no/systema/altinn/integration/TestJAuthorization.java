@@ -4,7 +4,7 @@
 //
 //import java.util.List;
 //
-//import org.apache.log4j.Logger;
+//import org.apache.logging.log4j.*;
 //import org.junit.Before;
 //import org.junit.Test;
 //import org.springframework.context.ApplicationContext;
@@ -20,7 +20,7 @@
 //
 //@PropertySource(value = { "classpath:application-test.properties" })
 //public class TestJAuthorization {
-//	private static Logger logger = Logger.getLogger(TestJAuthorization.class.getName());
+//	private static Logger logger = LogManager.getLogger(TestJAuthorization.class.getName());
 //	Authorization auth = null;
 //	ApplicationContext context = null;
 //	ApplicationContext context2 = null;

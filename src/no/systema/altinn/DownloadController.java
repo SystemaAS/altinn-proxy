@@ -11,7 +11,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.Assert;
@@ -40,7 +40,7 @@ import no.systema.jservices.common.util.StringUtils;
  */
 @Controller
 public class DownloadController {
-	private static Logger logger = Logger.getLogger(DownloadController.class.getName());
+	private static Logger logger = LogManager.getLogger(DownloadController.class.getName());
 
 	/**
 	 * 

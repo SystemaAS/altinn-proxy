@@ -2,7 +2,7 @@
 //
 //import java.time.LocalDateTime;
 //
-//import org.apache.log4j.Logger;
+//import org.apache.logging.log4j.*;
 //import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.context.annotation.Configuration;
 //import org.springframework.scheduling.annotation.EnableScheduling;
@@ -11,7 +11,7 @@
 //@Configuration
 //@EnableScheduling
 //public class Scheduler {
-//	private static Logger logger = Logger.getLogger(Scheduler.class);
+//	private static Logger logger = LogManager.getLogger(Scheduler.class);
 //
 //	@Autowired
 //	private ActionsServiceManager serviceManager;

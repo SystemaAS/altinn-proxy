@@ -9,12 +9,12 @@ import java.util.Iterator;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.*;
 import org.springframework.stereotype.Service;
 
 @Service("certificateManager")
 public class CertificateManager {
-	private static Logger logger = Logger.getLogger(CertificateManager.class.getName());
+	private static Logger logger = LogManager.getLogger(CertificateManager.class.getName());
 	private static String CATALINA_HOME = System.getProperty("catalina.home");
 	private static String PREFIX_NAME = "Buypass ID-SYSTEMA";
 

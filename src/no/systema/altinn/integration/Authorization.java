@@ -19,7 +19,7 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContexts;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -40,7 +40,7 @@ import no.systema.jservices.common.dao.FirmaltDao;
 
 @Service("authorization")
 public class Authorization {
-	private static Logger logger = Logger.getLogger(Authorization.class.getName());
+	private static Logger logger = LogManager.getLogger(Authorization.class.getName());
 	
 	@Autowired
 	private CertificateManager certificateManager;

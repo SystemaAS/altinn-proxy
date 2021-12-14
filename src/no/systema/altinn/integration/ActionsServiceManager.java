@@ -16,7 +16,7 @@ import java.util.List;
 import javax.annotation.PostConstruct;
 
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -56,7 +56,7 @@ import no.systema.jservices.common.util.DateTimeManager;
  */
 @Service("actionsservicemanager")
 public class ActionsServiceManager {
-	private static Logger logger = Logger.getLogger(ActionsServiceManager.class);
+	private static Logger logger = LogManager.getLogger(ActionsServiceManager.class);
 	DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd"); //as defined in Firmalt
 	DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HHmmss");  //as defined in Firmalt.
 	
